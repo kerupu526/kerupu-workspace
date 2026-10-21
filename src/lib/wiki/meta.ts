@@ -44,6 +44,12 @@ export const MAX_INFO_ROWS = 30;
 const MAX_LABEL_LENGTH = 30;
 const MAX_VALUE_LENGTH = 200;
 
+/** 경고와 그 줄 (입력 글 안에서 0부터 센다) */
+export interface MetaDiagnostic {
+  message: string;
+  line: number;
+}
+
 export function emptyMeta(): WikiMeta {
   return { categories: [], infobox: { rows: [] } };
 }
@@ -60,35 +66,45 @@ function removeInlineComments(line: string): string {
     .join("");
 }
 
-export function stripComments(markdown: string): string {
+/* text 와 함께, 결과의 각 줄이 입력의 몇 번째 줄(0부터)이었는지 돌려준다 */
+export function stripCommentsMapped(markdown: string): { text: string; lineMap: number[] } {
   const out: string[] = [];
+  const lineMap: number[] = [];
   let fence: string | null = null;
 
-  for (const line of markdown.split(/\r?\n/)) {
+  markdown.split(/\r?\n/).forEach((line, index) => {
+    const keep = (text: string) => {
+      out.push(text);
+      lineMap.push(index);
+    };
     const fenceMatch = FENCE.exec(line);
     if (fence) {
       if (fenceMatch && fenceMatch[1][0] === fence[0] && fenceMatch[1].length >= fence.length) fence = null;
-      out.push(line);
-      continue;
+      keep(line);
+      return;
     }
     if (fenceMatch) {
       fence = fenceMatch[1];
-      out.push(line);
-      continue;
+      keep(line);
+      return;
     }
 
-    if (line.startsWith("%%")) continue; // 줄 전체가 주석
+    if (line.startsWith("%%")) return; // 줄 전체가 주석
 
     if (line.includes("%%")) {
       const cleaned = removeInlineComments(line);
       // 주석뿐이던 줄은 빈 줄로 남기지 않고 없앤다 (문단이 끊어지지 않게)
-      if (cleaned.trim() === "" && line.trim() !== "") continue;
-      out.push(cleaned);
-      continue;
+      if (cleaned.trim() === "" && line.trim() !== "") return;
+      keep(cleaned);
+      return;
     }
-    out.push(line);
-  }
-  return out.join("\n");
+    keep(line);
+  });
+  return { text: out.join("\n"), lineMap };
+}
+
+export function stripComments(markdown: string): string {
+  return stripCommentsMapped(markdown).text;
 }
 
 /* ---- 메타 블록 ---- */
@@ -108,14 +124,20 @@ function clip(text: string, max: number): string | null {
 export function extractMeta(
   markdown: string,
   isSafeImage: (src: string) => boolean,
-): { text: string; meta: WikiMeta; warnings: string[] } {
+): { text: string; meta: WikiMeta; warnings: string[]; diagnostics: MetaDiagnostic[]; removedLines: number } {
   const meta = emptyMeta();
   const warnings: string[] = [];
+  const diagnostics: MetaDiagnostic[] = [];
   const lines = markdown.split("\n");
+  let current = 0; // 지금 읽는 줄 (경고가 가리킨다)
+  const warn = (message: string) => {
+    warnings.push(message);
+    diagnostics.push({ message, line: current });
+  };
 
   let start = 0;
   while (start < lines.length && lines[start].trim() === "") start += 1;
-  if (start >= lines.length || !DELIMITER.test(lines[start])) return { text: markdown, meta, warnings };
+  if (start >= lines.length || !DELIMITER.test(lines[start])) return { text: markdown, meta, warnings, diagnostics, removedLines: 0 };
 
   let end = -1;
   for (let i = start + 1; i < lines.length; i += 1) {
@@ -124,7 +146,7 @@ export function extractMeta(
       break;
     }
   }
-  if (end < 0) return { text: markdown, meta, warnings };
+  if (end < 0) return { text: markdown, meta, warnings, diagnostics, removedLines: 0 };
 
   const body = lines.slice(start + 1, end);
   const content = body.filter((l) => l.trim() !== "");
@@ -132,12 +154,13 @@ export function extractMeta(
     content.length > 0 &&
     KEY_LINE.test(content[0]) &&
     content.every((l) => /^\s/.test(l) || KEY_LINE.test(l));
-  if (!looksLikeMeta) return { text: markdown, meta, warnings };
+  if (!looksLikeMeta) return { text: markdown, meta, warnings, diagnostics, removedLines: 0 };
 
   let section: "분류" | "정보" | "이미지" | null = null;
   const rows = new Map<string, string>();
 
-  for (const raw of body) {
+  for (const [offset, raw] of body.entries()) {
+    current = start + 1 + offset;
     if (raw.trim() === "") continue;
     const indented = /^\s/.test(raw);
 
@@ -155,42 +178,42 @@ export function extractMeta(
           .filter(Boolean);
         for (const name of names) {
           const ok = clip(name, MAX_CATEGORY_LENGTH);
-          if (!ok) warnings.push(`메타 블록: 분류 "${name.slice(0, 20)}"은(는) ${MAX_CATEGORY_LENGTH}자를 넘어 버렸습니다.`);
+          if (!ok) warn(`메타 블록: 분류 "${name.slice(0, 20)}"은(는) ${MAX_CATEGORY_LENGTH}자를 넘어 버렸습니다.`);
           else if (!meta.categories.includes(ok)) {
             if (meta.categories.length >= MAX_CATEGORIES) {
-              warnings.push(`메타 블록: 분류는 ${MAX_CATEGORIES}개까지만 쓸 수 있어 "${ok}"을(를) 버렸습니다.`);
+              warn(`메타 블록: 분류는 ${MAX_CATEGORIES}개까지만 쓸 수 있어 "${ok}"을(를) 버렸습니다.`);
             } else meta.categories.push(ok);
           }
         }
       } else if (key === "정보") {
         section = "정보";
-        if (value !== "") warnings.push("메타 블록: 정보 뒤에는 값을 쓰지 않고 다음 줄부터 들여써서 씁니다.");
+        if (value !== "") warn("메타 블록: 정보 뒤에는 값을 쓰지 않고 다음 줄부터 들여써서 씁니다.");
       } else if (key === "이미지") {
         section = "이미지";
         if (value !== "" && isSafeImage(value)) meta.infobox.image = value;
-        else warnings.push(`메타 블록: 이미지 주소는 /uploads/ 로 시작하는 올린 파일만 쓸 수 있습니다: "${value.slice(0, 40)}"`);
+        else warn(`메타 블록: 이미지 주소는 /uploads/ 로 시작하는 올린 파일만 쓸 수 있습니다: "${value.slice(0, 40)}"`);
       } else {
-        warnings.push(`메타 블록: 알 수 없는 이름 "${key.slice(0, 20)}"은(는) 버렸습니다.`);
+        warn(`메타 블록: 알 수 없는 이름 "${key.slice(0, 20)}"은(는) 버렸습니다.`);
       }
       continue;
     }
 
     // 들여쓴 줄
     if (/^[ ]*\t/.test(raw) || raw.startsWith("\t")) {
-      warnings.push("메타 블록: 들여쓰기에 탭을 쓸 수 없어 그 줄을 버렸습니다. 공백 2칸을 쓰세요.");
+      warn("메타 블록: 들여쓰기에 탭을 쓸 수 없어 그 줄을 버렸습니다. 공백 2칸을 쓰세요.");
       continue;
     }
     if (section !== "정보") continue; // 알 수 없는 이름 아래의 줄은 함께 버린다 (이미 경고했다)
 
     const m = KEY_LINE.exec(raw.trim());
     if (!m) {
-      warnings.push(`메타 블록: 정보의 "${raw.trim().slice(0, 20)}" 줄은 "이름: 값" 형식이 아니라 버렸습니다.`);
+      warn(`메타 블록: 정보의 "${raw.trim().slice(0, 20)}" 줄은 "이름: 값" 형식이 아니라 버렸습니다.`);
       continue;
     }
     const label = clip(m[1], MAX_LABEL_LENGTH);
     const value = clip(m[2], MAX_VALUE_LENGTH);
     if (!label || !value) {
-      warnings.push(`메타 블록: 정보의 "${m[1].trim().slice(0, 20)}" 항목은 이름이나 값이 비었거나 너무 길어 버렸습니다.`);
+      warn(`메타 블록: 정보의 "${m[1].trim().slice(0, 20)}" 항목은 이름이나 값이 비었거나 너무 길어 버렸습니다.`);
       continue;
     }
     if (label === "제목") {
@@ -198,7 +221,7 @@ export function extractMeta(
       continue;
     }
     if (!rows.has(label) && rows.size >= MAX_INFO_ROWS) {
-      warnings.push(`메타 블록: 정보는 ${MAX_INFO_ROWS}행까지만 쓸 수 있어 "${label}"을(를) 버렸습니다.`);
+      warn(`메타 블록: 정보는 ${MAX_INFO_ROWS}행까지만 쓸 수 있어 "${label}"을(를) 버렸습니다.`);
       continue;
     }
     rows.delete(label); // 같은 이름은 뒤의 것을 쓴다
@@ -206,5 +229,5 @@ export function extractMeta(
   }
 
   meta.infobox.rows = [...rows].map(([label, value]) => ({ label, value }));
-  return { text: lines.slice(end + 1).join("\n"), meta, warnings };
+  return { text: lines.slice(end + 1).join("\n"), meta, warnings, diagnostics, removedLines: end + 1 };
 }

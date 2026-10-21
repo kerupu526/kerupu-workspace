@@ -3,7 +3,7 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import type { WikiBlock, WikiInline, WikiListItem, WikiSection } from "@/components/WikiDocument";
 import { sanitizeStyle, toReactStyle } from "./css.ts";
-import { extractMeta, stripComments, type WikiMeta } from "./meta.ts";
+import { extractMeta, stripCommentsMapped, type WikiMeta } from "./meta.ts";
 import { extractFootnotes, restoreFootnoteText, splitFootnoteMarks, type RawFootnote } from "./footnote.ts";
 
 /*
@@ -48,7 +48,7 @@ type MdNode = {
   ordered?: boolean;
   align?: (string | null)[];
   children?: MdNode[];
-  position?: { start: { offset?: number }; end: { offset?: number } };
+  position?: { start: { line?: number; offset?: number }; end: { line?: number; offset?: number } };
 };
 
 /*
@@ -75,11 +75,19 @@ export function isSafeImageSrc(src: string): boolean {
   return src.startsWith("/uploads/") && !src.includes("..");
 }
 
+/** 편집 화면용 경고 하나. line 은 원문의 줄(1부터)이고, 어느 줄인지 모를 때는 없다. */
+export interface Diagnostic {
+  message: string;
+  line?: number;
+}
+
 export interface ParsedWiki {
   sections: WikiSection[];
   footnotes: string[];
   /** 편집 화면에 보여 줄 경고 (버린 CSS 선언 등). 읽기 화면에서는 쓰지 않는다. */
   warnings: string[];
+  /** warnings 와 같은 내용에 줄 번호를 붙인 것 (같은 순서) */
+  diagnostics: Diagnostic[];
   /** 메타 블록의 분류와 정보 상자 */
   meta: WikiMeta;
   /** 첫 제목 전에 쓴 [toc] (있으면 toc 블록 하나). 문서 본문 맨 앞에 놓는다. */
@@ -89,6 +97,10 @@ export interface ParsedWiki {
 interface StyleBlockSource {
   declarations: string;
   content: string;
+  /** 선언 글의 각 줄이 원문 몇 번째 줄(0부터)인지 */
+  declarationLines: number[];
+  /** 안쪽 글의 각 줄이 원문 몇 번째 줄(0부터)인지 */
+  contentLines: number[];
 }
 
 /* 파싱 중에 함께 끌고 다니는 것들 */
@@ -106,12 +118,31 @@ interface Ctx {
   listDepth: number;
   /** 같은 종류의 경고를 한 번만 남기기 위한 목록 */
   warned: Set<string>;
+  /** 경고와 그 줄 (warnings 와 같은 순서) */
+  diagnostics: Diagnostic[];
+  /** 지금 읽는 마크다운 글의 각 줄이 원문 몇 번째 줄(0부터)인지 */
+  lineMap: number[];
+  /** 지금 처리 중인 블록이 있는 원문의 줄(1부터) */
+  line: number | undefined;
+}
+
+/* 경고를 남긴다. line 은 원문의 줄(1부터). 생략하면 지금 처리 중인 블록의 줄이다. */
+function warn(ctx: Ctx, message: string, line: number | undefined = ctx.line) {
+  ctx.warnings.push(message);
+  ctx.diagnostics.push(line === undefined ? { message } : { message, line });
 }
 
 function warnOnce(ctx: Ctx, key: string, message: string) {
   if (ctx.warned.has(key)) return;
   ctx.warned.add(key);
-  ctx.warnings.push(message);
+  warn(ctx, message);
+}
+
+/* 마크다운 노드가 원문의 몇 번째 줄(1부터)인지 */
+function lineOf(node: MdNode, ctx: Ctx): number | undefined {
+  const line = node.position?.start.line;
+  const original = line === undefined ? undefined : ctx.lineMap[line - 1];
+  return original === undefined ? undefined : original + 1;
 }
 
 /* CSS 블록 자리에 남기는 문단에 쓰는 글자 (사용자 글에서는 먼저 지운다) */
@@ -195,7 +226,8 @@ function toTable(node: MdNode, ctx: Ctx): WikiBlock | null {
   const rows = node.children ?? [];
   const cols = Math.max(0, ...rows.map((r) => (r.children ?? []).length));
   if (cols > LIMITS.tableCols || rows.length > LIMITS.tableRows) {
-    ctx.warnings.push(
+    warn(
+      ctx,
       `표는 열 ${LIMITS.tableCols}개, 행 ${LIMITS.tableRows}개까지만 쓸 수 있어 표를 버렸습니다 (열 ${cols}개, 행 ${rows.length}개).`,
     );
     return null;
@@ -214,6 +246,7 @@ function toTable(node: MdNode, ctx: Ctx): WikiBlock | null {
 function toBlocks(nodes: MdNode[], ctx: Ctx): WikiBlock[] {
   const out: WikiBlock[] = [];
   for (const node of nodes) {
+    ctx.line = lineOf(node, ctx) ?? ctx.line;
     switch (node.type) {
       case "paragraph": {
         const only = node.children?.length === 1 ? node.children[0] : undefined;
@@ -304,22 +337,30 @@ function warnDropped(node: MdNode, ctx: Ctx) {
 /* CSS 블록 하나를 위키 블록으로 바꾼다. 통과한 선언이 없으면 감싸지 않고 안쪽 블록만 남긴다. */
 function toStyleBlock(source: StyleBlockSource | undefined, ctx: Ctx): WikiBlock[] | null {
   if (!source) return null;
-  const { style, dropped } = sanitizeStyle(source.declarations);
-  for (const declaration of dropped) {
-    ctx.warnings.push(`CSS 블록: "${declaration}" 선언은 허용되지 않아 버렸습니다.`);
-  }
+  const { style, dropped, droppedAt } = sanitizeStyle(source.declarations);
+  dropped.forEach((declaration, k) => {
+    const original = source.declarationLines[droppedAt[k]];
+    warn(ctx, `CSS 블록: "${declaration}" 선언은 허용되지 않아 버렸습니다.`, original === undefined ? ctx.line : original + 1);
+  });
 
+  // 안쪽 글은 따로 파싱하므로 줄 번호도 안쪽 글의 지도로 바꿔서 읽는다
+  const outerMap = ctx.lineMap;
+  const outerLine = ctx.line;
+  ctx.lineMap = source.contentLines;
   const children: WikiBlock[] = [];
   const inner = processor.parse(source.content) as MdNode;
   for (const node of inner.children ?? []) {
+    ctx.line = lineOf(node, ctx) ?? outerLine;
     if (node.type === "heading") {
-      ctx.warnings.push(`CSS 블록 안에서는 제목을 쓸 수 없어 버렸습니다: "${plainText(node.children, ctx.notes)}"`);
+      warn(ctx, `CSS 블록 안에서는 제목을 쓸 수 없어 버렸습니다: "${plainText(node.children, ctx.notes)}"`);
     } else if (BLOCK_TYPES.has(node.type)) {
       children.push(...toBlocks([node], ctx));
     } else {
       warnDropped(node, ctx);
     }
   }
+  ctx.lineMap = outerMap;
+  ctx.line = outerLine;
 
   if (Object.keys(style).length === 0) return children;
   if (children.length === 0) return [];
@@ -339,11 +380,14 @@ function findClosing(lines: string[], from: number): number {
  *   :::style / 선언들 / ::: / 내용 / :::
  * 코드 블록(``` 나 ~~~) 안은 건드리지 않는다. 짝이 안 맞으면 그대로 둔다.
  */
-function extractStyleBlocks(markdown: string): { text: string; blocks: StyleBlockSource[] } {
+function extractStyleBlocks(markdown: string): { text: string; blocks: StyleBlockSource[]; lineMap: number[] } {
   const lines = markdown.replaceAll(SENTINEL, "").split(/\r?\n/);
   const out: string[] = [];
+  const lineMap: number[] = []; // 결과의 각 줄이 입력의 몇 번째 줄(0부터)이었는지
   const blocks: StyleBlockSource[] = [];
   let fence: string | null = null;
+
+  const range = (from: number, to: number) => Array.from({ length: Math.max(0, to - from) }, (_, k) => from + k);
 
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
@@ -352,11 +396,13 @@ function extractStyleBlocks(markdown: string): { text: string; blocks: StyleBloc
     if (fence) {
       if (fenceMatch && fenceMatch[1][0] === fence[0] && fenceMatch[1].length >= fence.length) fence = null;
       out.push(line);
+      lineMap.push(i);
       continue;
     }
     if (fenceMatch) {
       fence = fenceMatch[1];
       out.push(line);
+      lineMap.push(i);
       continue;
     }
 
@@ -367,17 +413,21 @@ function extractStyleBlocks(markdown: string): { text: string; blocks: StyleBloc
         blocks.push({
           declarations: lines.slice(i + 1, declarationsEnd).join("\n"),
           content: lines.slice(declarationsEnd + 1, contentEnd).join("\n"),
+          declarationLines: range(i + 1, declarationsEnd),
+          contentLines: range(declarationsEnd + 1, contentEnd),
         });
         // 앞뒤에 빈 줄을 둬서 자리표시가 독립된 문단이 되게 한다
         out.push("", `${SENTINEL}${blocks.length - 1}${SENTINEL}`, "");
+        lineMap.push(i, i, i);
         i = contentEnd;
         continue;
       }
     }
     out.push(line);
+    lineMap.push(i);
   }
 
-  return { text: out.join("\n"), blocks };
+  return { text: out.join("\n"), blocks, lineMap };
 }
 
 /* 문단이 [toc] 한 줄뿐인지. 원문을 보고 판단해서 \[toc] 처럼 이스케이프한 것은 글자로 남긴다. */
@@ -404,28 +454,55 @@ function plainText(nodes: MdNode[] = [], notes: RawFootnote[]): string {
 const BLOCK_TYPES = new Set(["paragraph", "list", "blockquote", "thematicBreak", "table", "html"]);
 
 export function parseWiki(markdown: string): ParsedWiki {
-  const warnings: string[] = [];
+  const early: Diagnostic[] = [];
   let source = markdown;
   if (source.length > LIMITS.bodyLength) {
     const cut = source.lastIndexOf("\n", LIMITS.bodyLength);
     source = source.slice(0, cut > 0 ? cut : LIMITS.bodyLength);
-    warnings.push(`문서가 ${LIMITS.bodyLength.toLocaleString("en-US")}자를 넘어 뒤쪽을 잘랐습니다.`);
+    // 잘린 곳이 몇 번째 줄인지 알려 준다
+    early.push({
+      message: `문서가 ${LIMITS.bodyLength.toLocaleString("en-US")}자를 넘어 뒤쪽을 잘랐습니다.`,
+      line: source.split("\n").length + 1,
+    });
   }
-  const uncommented = stripComments(source);
-  const withoutMeta = extractMeta(uncommented, isSafeImageSrc);
+
+  // 파싱 전 단계마다 "결과의 이 줄은 앞 단계 글의 몇 번째 줄이었나"를 돌려받아 이어 붙이면,
+  // 마지막 글의 줄 번호를 원문의 줄 번호로 되돌릴 수 있다 (모두 0부터 센다).
+  const stripped = stripCommentsMapped(source);
+  const withoutMeta = extractMeta(stripped.text, isSafeImageSrc);
+  const afterMeta = stripped.lineMap.slice(withoutMeta.removedLines);
   const withNotes = extractFootnotes(withoutMeta.text);
-  const { text, blocks } = extractStyleBlocks(withNotes.text);
+  const afterNotes = withNotes.lineMap.map((i) => afterMeta[i]);
+  const extracted = extractStyleBlocks(withNotes.text);
+  const { text, blocks } = extracted;
+  const lineMap = extracted.lineMap.map((i) => afterNotes[i]);
+  const toOriginal = (map: number[]) => (lines: number[]) => lines.map((i) => map[i]);
+  const originalOf = toOriginal(afterNotes);
+  for (const block of blocks) {
+    block.declarationLines = originalOf(block.declarationLines);
+    block.contentLines = originalOf(block.contentLines);
+  }
+
+  const diagnostics: Diagnostic[] = [
+    ...early,
+    ...withoutMeta.diagnostics.map((d) => ({ message: d.message, line: stripped.lineMap[d.line] + 1 })),
+    ...withNotes.diagnostics.map((d) => ({ message: d.message, line: afterMeta[d.line] + 1 })),
+  ];
+
   const tree = processor.parse(text) as MdNode;
   const footnotes: string[] = [];
   const ctx: Ctx = {
     footnotes,
     notes: withNotes.notes,
-    warnings: [...warnings, ...withoutMeta.warnings, ...withNotes.warnings],
+    warnings: diagnostics.map((d) => d.message),
+    diagnostics,
     styled: blocks,
     images: 0,
     quoteDepth: 0,
     listDepth: 0,
     warned: new Set(),
+    lineMap,
+    line: undefined,
   };
   const root: WikiSection[] = [];
   const lead: WikiBlock[] = [];
@@ -434,9 +511,10 @@ export function parseWiki(markdown: string): ParsedWiki {
   const stack: WikiSection[] = [];
 
   for (const node of tree.children ?? []) {
+    ctx.line = lineOf(node, ctx);
     if (node.type === "paragraph" && isTocParagraph(node, text)) {
       if (tocSeen) {
-        ctx.warnings.push("[toc] 는 한 번만 쓸 수 있어 두 번째부터 버렸습니다.");
+        warn(ctx, "[toc] 는 한 번만 쓸 수 있어 두 번째부터 버렸습니다.");
       } else {
         tocSeen = true;
         const target = stack[stack.length - 1];
@@ -476,7 +554,7 @@ export function parseWiki(markdown: string): ParsedWiki {
     }
   }
 
-  return { sections: root, footnotes, warnings: ctx.warnings, meta: withoutMeta.meta, lead };
+  return { sections: root, footnotes, warnings: ctx.warnings, diagnostics: ctx.diagnostics, meta: withoutMeta.meta, lead };
 }
 
 /* 문단 구조만 필요할 때 */

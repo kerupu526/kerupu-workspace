@@ -346,6 +346,8 @@ export interface SanitizedStyle {
   style: Record<string, string>;
   /** 버린 선언 (편집 화면 경고용 글자) */
   dropped: string[];
+  /** 버린 선언이 있던 줄 (source 안에서 0부터 센다). dropped 와 같은 순서 */
+  droppedAt: number[];
 }
 
 function describe(text: string): string {
@@ -356,25 +358,33 @@ function describe(text: string): string {
 export function sanitizeStyle(source: string): SanitizedStyle {
   const accepted = new Map<string, string>();
   const dropped: string[] = [];
+  const droppedAt: number[] = [];
   let count = 0;
+  let position = 0; // 지금 선언이 source 의 몇 번째 글자에서 시작하는지
 
   for (const chunk of source.split(";")) {
+    const start = position + (chunk.length - chunk.trimStart().length);
+    position += chunk.length + 1;
     const text = chunk.replace(/\s+/g, " ").trim();
     if (text === "") continue;
+    const drop = () => {
+      dropped.push(describe(text));
+      droppedAt.push(source.slice(0, start).split("\n").length - 1);
+    };
     count += 1;
     if (count > MAX_DECLARATIONS) {
-      dropped.push(describe(text));
+      drop();
       continue;
     }
     const colon = text.indexOf(":");
     if (colon <= 0) {
-      dropped.push(describe(text));
+      drop();
       continue;
     }
     const prop = text.slice(0, colon).trim().toLowerCase();
     const cleaned = ALLOWED_PROPERTIES.has(prop) ? validateValue(prop, text.slice(colon + 1)) : null;
     if (cleaned === null) {
-      dropped.push(describe(text));
+      drop();
       continue;
     }
     // 같은 속성이 또 나오면 뒤의 것을 쓴다
@@ -382,7 +392,7 @@ export function sanitizeStyle(source: string): SanitizedStyle {
     accepted.set(prop, cleaned);
   }
 
-  return { style: Object.fromEntries(accepted), dropped };
+  return { style: Object.fromEntries(accepted), dropped, droppedAt };
 }
 
 /* React 의 style 속성은 camelCase 이름을 쓴다 (text-align -> textAlign) */

@@ -68,16 +68,44 @@ function readFootnote(chunk: string, start: number): Read | null {
   return null;
 }
 
-/* 코드 블록이 아닌 한 덩어리의 글에서 각주를 떼어 낸다 */
-function scanChunk(chunk: string, notes: RawFootnote[], warnings: string[]): string {
+/** 경고와 그 줄 (입력 글 안에서 0부터 센다) */
+export interface FootnoteDiagnostic {
+  message: string;
+  line: number;
+}
+
+const countNewlines = (text: string) => text.split("\n").length - 1;
+
+/*
+ * 코드 블록이 아닌 한 덩어리의 글에서 각주를 떼어 낸다.
+ * lineMap: 결과의 각 줄이 입력(chunk)의 몇 번째 줄(0부터)이었는지. 여러 줄에 걸친 각주는 줄이 줄어든다.
+ */
+function scanChunk(
+  chunk: string,
+  notes: RawFootnote[],
+  report: (message: string, line: number) => void,
+): { text: string; lineMap: number[] } {
   let out = "";
+  const lineMap: number[] = [0];
+  let inLine = 0; // 지금 읽는 입력 줄
   let i = 0;
+
+  // 입력을 그대로 옮긴다: 줄바꿈마다 결과 줄이 하나 늘고, 그 줄은 입력의 다음 줄에서 이어진다
+  const copy = (piece: string) => {
+    out += piece;
+    for (let k = 0; k < piece.length; k += 1) {
+      if (piece[k] === "\n") {
+        inLine += 1;
+        lineMap.push(inLine);
+      }
+    }
+  };
 
   while (i < chunk.length) {
     const c = chunk[i];
 
     if (c === "\\") {
-      out += chunk.slice(i, i + 2);
+      copy(chunk.slice(i, i + 2));
       i += 2;
       continue;
     }
@@ -88,7 +116,7 @@ function scanChunk(chunk: string, notes: RawFootnote[], warnings: string[]): str
       while (chunk[i + n] === "`") n += 1;
       const closing = new RegExp(`(?<!\`)\`{${n}}(?!\`)`).exec(chunk.slice(i + n));
       const end = closing ? i + n + closing.index + n : i + n;
-      out += chunk.slice(i, end);
+      copy(chunk.slice(i, end));
       i = end;
       continue;
     }
@@ -96,8 +124,8 @@ function scanChunk(chunk: string, notes: RawFootnote[], warnings: string[]): str
     if (c === "^" && chunk[i + 1] === "[") {
       const read = readFootnote(chunk, i + 2);
       if (read && read.nested) {
-        warnings.push("각주 안에는 각주를 쓸 수 없어 그 부분을 각주로 만들지 않았습니다.");
-        out += chunk.slice(i, read.end);
+        report("각주 안에는 각주를 쓸 수 없어 그 부분을 각주로 만들지 않았습니다.", inLine);
+        copy(chunk.slice(i, read.end));
         i = read.end;
         continue;
       }
@@ -105,48 +133,70 @@ function scanChunk(chunk: string, notes: RawFootnote[], warnings: string[]): str
         const source = chunk.slice(i, read.end);
         notes.push({ content: read.content, source });
         out += `${FOOTNOTE_MARK}${notes.length - 1}${FOOTNOTE_MARK}`;
+        inLine += countNewlines(source); // 각주가 삼킨 줄바꿈은 결과에 없다
         i = read.end;
         continue;
       }
     }
 
-    out += c;
+    copy(c);
     i += 1;
   }
-  return out;
+  return { text: out, lineMap };
 }
 
-export function extractFootnotes(markdown: string): { text: string; notes: RawFootnote[]; warnings: string[] } {
+export interface ExtractedFootnotes {
+  text: string;
+  notes: RawFootnote[];
+  warnings: string[];
+  diagnostics: FootnoteDiagnostic[];
+  /** 결과의 각 줄이 입력의 몇 번째 줄(0부터)이었는지 */
+  lineMap: number[];
+}
+
+export function extractFootnotes(markdown: string): ExtractedFootnotes {
   const notes: RawFootnote[] = [];
-  const warnings: string[] = [];
+  const diagnostics: FootnoteDiagnostic[] = [];
   const clean = markdown.replaceAll(FOOTNOTE_MARK, "");
+  const inputLines = clean.split("\n");
   const out: string[] = [];
+  const lineMap: number[] = [];
   let buffer: string[] = [];
+  let bufferStart = 0;
   let fence: string | null = null;
 
   const flush = () => {
-    if (buffer.length > 0) out.push(scanChunk(buffer.join("\n"), notes, warnings));
+    if (buffer.length === 0) return;
+    const base = bufferStart;
+    const scanned = scanChunk(buffer.join("\n"), notes, (message, line) => diagnostics.push({ message, line: base + line }));
+    out.push(scanned.text);
+    for (const l of scanned.lineMap) lineMap.push(base + l);
     buffer = [];
   };
 
-  for (const line of clean.split("\n")) {
+  inputLines.forEach((line, index) => {
     const fenceMatch = FENCE.exec(line);
+    const keep = () => {
+      out.push(line);
+      lineMap.push(index);
+    };
     if (fence) {
       if (fenceMatch && fenceMatch[1][0] === fence[0] && fenceMatch[1].length >= fence.length) fence = null;
-      out.push(line);
-      continue;
+      keep();
+      return;
     }
     if (fenceMatch) {
       flush();
       fence = fenceMatch[1];
-      out.push(line);
-      continue;
+      keep();
+      return;
     }
+    if (buffer.length === 0) bufferStart = index;
     buffer.push(line);
-  }
+  });
   flush();
 
-  return { text: out.join("\n"), notes, warnings };
+  return { text: out.join("\n"), notes, warnings: diagnostics.map((d) => d.message), diagnostics, lineMap };
 }
 
 /* 글 속의 표시를 원문 그대로 되돌린다 (제목, 링크 주소, 이미지 설명처럼 각주가 될 수 없는 곳) */
