@@ -23,9 +23,20 @@ type MdNode = {
   depth?: number;
   value?: string;
   url?: string;
+  alt?: string | null;
   ordered?: boolean;
+  align?: (string | null)[];
   children?: MdNode[];
 };
+
+/* 표와 이미지의 제한 (docs/wiki-syntax.md 5장) */
+const TABLE_MAX_COLS = 12;
+const TABLE_MAX_ROWS = 300;
+
+/* 이미지 주소는 사이트에 올린 파일만 허용한다 */
+export function isSafeImageSrc(src: string): boolean {
+  return src.startsWith("/uploads/") && !src.includes("..");
+}
 
 export interface ParsedWiki {
   sections: WikiSection[];
@@ -85,6 +96,10 @@ function toInline(nodes: MdNode[] = [], footnotes: string[]): WikiInline[] {
       case "break":
         out.push(" ");
         break;
+      case "image":
+        // 문장 안의 이미지는 그림 대신 설명 글자로 남긴다 (그림은 문단 하나에 단독으로 쓴다)
+        if (node.alt) out.push(node.alt);
+        break;
       default:
         if (node.children) out.push(...toInline(node.children, footnotes));
         else if (node.value) out.push(node.value);
@@ -103,14 +118,40 @@ function toListItem(node: MdNode, footnotes: string[]): WikiListItem {
   return nested.length > 0 ? { content, nested } : { content };
 }
 
+/* 표: 열 12개, 행 300개를 넘으면 표 전체를 버린다 */
+function toTable(node: MdNode, footnotes: string[]): WikiBlock | null {
+  const rows = node.children ?? [];
+  const cols = Math.max(0, ...rows.map((r) => (r.children ?? []).length));
+  if (cols === 0 || cols > TABLE_MAX_COLS || rows.length > TABLE_MAX_ROWS) return null;
+  const cells = rows.map((r) => (r.children ?? []).map((c) => toInline(c.children, footnotes)));
+  const align = Array.from({ length: cols }, (_, i) => {
+    const a = node.align?.[i];
+    return a === "left" || a === "center" || a === "right" ? a : null;
+  });
+  const [head, ...body] = cells;
+  return { type: "table", align, head: head ?? [], rows: body };
+}
+
 /* 블록 노드들을 위키 블록으로 바꾼다. 처리하지 않는 블록은 버린다. */
 function toBlocks(nodes: MdNode[], footnotes: string[]): WikiBlock[] {
   const out: WikiBlock[] = [];
   for (const node of nodes) {
     switch (node.type) {
-      case "paragraph":
+      case "paragraph": {
+        // 문단이 이미지 하나뿐이면 그림 블록으로 바꾼다
+        const only = node.children?.length === 1 ? node.children[0] : undefined;
+        if (only && only.type === "image" && only.url && isSafeImageSrc(only.url)) {
+          out.push({ type: "image", src: only.url, alt: only.alt || fileName(only.url) });
+          break;
+        }
         out.push({ type: "p", children: toInline(node.children, footnotes) });
         break;
+      }
+      case "table": {
+        const table = toTable(node, footnotes);
+        if (table) out.push(table);
+        break;
+      }
       case "list":
         out.push({
           type: "list",
@@ -132,6 +173,11 @@ function toBlocks(nodes: MdNode[], footnotes: string[]): WikiBlock[] {
   return out;
 }
 
+/* 주소에서 파일 이름만 꺼낸다 (설명이 없을 때 대신 쓴다) */
+function fileName(src: string): string {
+  return src.split("/").pop() ?? src;
+}
+
 /* 제목 글자(평문) */
 function plainText(nodes: MdNode[] = []): string {
   return nodes
@@ -139,7 +185,7 @@ function plainText(nodes: MdNode[] = []): string {
     .join("");
 }
 
-const BLOCK_TYPES = new Set(["paragraph", "list", "blockquote", "thematicBreak"]);
+const BLOCK_TYPES = new Set(["paragraph", "list", "blockquote", "thematicBreak", "table"]);
 
 export function parseWiki(markdown: string): ParsedWiki {
   const tree = processor.parse(markdown) as MdNode;

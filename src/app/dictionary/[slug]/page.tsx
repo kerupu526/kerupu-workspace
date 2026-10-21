@@ -25,6 +25,15 @@ const SECTIONS: WikiSection[] = [
       },
       { type: "quote", children: [{ type: "p", children: ["[인용 내용]"] }] },
       { type: "hr" },
+      {
+        type: "table",
+        align: ["left", "center", "right"],
+        head: [["항목"], ["값"], ["메모"]],
+        rows: [
+          [["[이름]"], ["[값 1]"], ["[메모]"]],
+          [["[나이]"], ["[값 2]"], ["[메모]"]],
+        ],
+      },
     ],
     children: [
       { title: "외모", blocks: [{ type: "p", children: ["[외모 설명]", { footnote: 2 }] }] },

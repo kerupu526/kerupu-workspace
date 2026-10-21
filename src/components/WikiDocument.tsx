@@ -25,7 +25,9 @@ export type WikiBlock =
   | { type: "p"; children: WikiInline[] }
   | { type: "list"; ordered: boolean; items: WikiListItem[] }
   | { type: "quote"; children: WikiBlock[] }
-  | { type: "hr" };
+  | { type: "hr" }
+  | { type: "table"; align: ("left" | "center" | "right" | null)[]; head: WikiInline[][]; rows: WikiInline[][][] }
+  | { type: "image"; src: string; alt: string };
 
 export interface WikiListItem {
   content: WikiInline[];
@@ -153,6 +155,46 @@ function Blocks({ blocks, footnotes }: { blocks: WikiBlock[]; footnotes: string[
             );
           case "hr":
             return <hr key={i} className={styles.hr} />;
+          case "table":
+            // 표는 가로로 넘치면 표만 스크롤한다 (페이지는 넘치지 않는다)
+            return (
+              <div key={i} className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      {block.head.map((cell, j) => (
+                        <th key={j} scope="col" style={{ textAlign: block.align[j] ?? undefined }}>
+                          {cell.map((part, k) => (
+                            <Inline key={k} part={part} footnotes={footnotes} />
+                          ))}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {block.rows.map((row, j) => (
+                      <tr key={j}>
+                        {row.map((cell, k) => (
+                          <td key={k} style={{ textAlign: block.align[k] ?? undefined }}>
+                            {cell.map((part, m) => (
+                              <Inline key={m} part={part} footnotes={footnotes} />
+                            ))}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          case "image":
+            // 이미지는 사이트에 올린 파일만 (파서에서 걸러진다). 설명은 항상 있다.
+            return (
+              <figure key={i} className={styles.figure}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={block.src} alt={block.alt} className={styles.image} loading="lazy" />
+              </figure>
+            );
         }
       })}
     </>

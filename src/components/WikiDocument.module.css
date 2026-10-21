@@ -140,6 +140,49 @@
   overflow-wrap: anywhere;
 }
 
+/* ---------- 표 ---------- */
+
+/* 표만 가로로 스크롤한다. 표 바깥 페이지는 넘치지 않는다. */
+.tableWrap {
+  max-width: 100%;
+  margin: 0 0 var(--space-16);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-caption-size);
+  font-weight: var(--font-weight-regular);
+}
+
+.table th,
+.table td {
+  padding: var(--space-8) var(--space-12);
+  border-bottom: var(--border-width) solid var(--card-border);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.table th {
+  font-weight: var(--font-weight-bold);
+  background: var(--main-header);
+}
+
+/* ---------- 이미지 ---------- */
+
+.figure {
+  margin: 0 0 var(--space-16);
+}
+
+.image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-field);
+}
+
 /* ---------- 리스트, 인용문, 수평줄 ---------- */
 
 .list {
