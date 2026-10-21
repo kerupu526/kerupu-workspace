@@ -2,7 +2,10 @@ import styles from "./WikiInfobox.module.css";
 
 export interface WikiInfoboxData {
   title: string;
+  /** 이미지가 없을 때 자리에 쓰는 글자이기도 하고, 이미지가 있을 때는 그 설명(alt)이다 */
   imageLabel: string;
+  /** 사이트에 올린 이미지 주소 (파서가 안전한 것만 넘긴다) */
+  image?: string;
   rows: { label: string; value: string }[];
 }
 
@@ -11,7 +14,7 @@ export interface WikiInfoboxData {
  * 항목 이름과 값은 표(table)의 행 머리글(th)과 칸(td)으로 묶어서 보조기기가 짝을 알 수 있게 한다.
  * 칸 사이 선은 장식(card-border)이라 의미는 글자와 표 구조가 맡는다.
  */
-export default function WikiInfobox({ title, imageLabel, rows }: WikiInfoboxData) {
+export default function WikiInfobox({ title, imageLabel, image, rows }: WikiInfoboxData) {
   return (
     <aside className={styles.box} aria-label={`${title} 정보`}>
       <table className={styles.table}>
@@ -19,7 +22,14 @@ export default function WikiInfobox({ title, imageLabel, rows }: WikiInfoboxData
         <tbody>
           <tr>
             <td className={styles.imageCell} colSpan={2}>
-              <div className={styles.image}>{imageLabel}</div>
+              {image ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={image} alt={imageLabel} className={styles.picture} loading="lazy" />
+                </>
+              ) : (
+                <div className={styles.image}>{imageLabel}</div>
+              )}
             </td>
           </tr>
           {rows.map((row) => (

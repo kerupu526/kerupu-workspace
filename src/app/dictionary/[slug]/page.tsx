@@ -80,6 +80,7 @@ export default async function DictionaryEntryPage({
             { label: "출처", value: "[출처]" },
           ],
         }}
+        lead={[{ type: "toc" }]}
         sections={SECTIONS}
         footnotes={["[각주 내용: 문서에 쓰인 근거나 보충 설명이 들어갑니다]", "[각주 내용]"]}
       />

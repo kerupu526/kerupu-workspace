@@ -3,10 +3,14 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import type { WikiBlock, WikiInline, WikiListItem, WikiSection } from "@/components/WikiDocument";
 import { sanitizeStyle, toReactStyle } from "./css.ts";
+import { extractMeta, stripComments, type WikiMeta } from "./meta.ts";
 
 /*
- * 위키 마크다운 파서 (5단계: 문단, 리스트, 인용문, 수평줄, 인라인 서식, 링크, 각주, 표, 이미지, CSS 블록).
+ * 위키 마크다운 파서 (6단계: 문단, 리스트, 인용문, 수평줄, 인라인 서식, 링크, 각주, 표, 이미지, CSS 블록,
+ * 메타 블록, 목차, 주석).
  * 설계는 docs/wiki-syntax.md 참고.
+ *
+ * 처리 순서: 주석 지우기 → 메타 블록 떼어 내기 → CSS 블록 떼어 내기 → 마크다운 파싱 → 블록 변환
  *
  * 규칙
  *   - ## 부터 문단 제목. ##이 1단계, ###이 2단계 ... ######이 5단계.
@@ -24,6 +28,11 @@ import { sanitizeStyle, toReactStyle } from "./css.ts";
  *       - 블록 안에 :::style 이 또 있으면 중첩으로 보지 않고 글자로 둔다. 안쪽의 ::: 가 바깥 블록을 닫는다.
  *       - 블록 안의 제목(##)은 쓸 수 없다. 제목은 버리고 warnings 에 남긴다 (문단 구조는 블록 밖에서만 만든다).
  *       - 블록은 어떤 문단 아래에 있어야 문서에 남는다 (첫 제목 전의 글은 버린다는 규칙 그대로).
+ *   - 메타 블록(분류, 정보, 이미지)과 주석(%%)의 규칙은 meta.ts 머리말에 있다. 메타 블록의 경고도 warnings 에 담는다.
+ *   - 목차: 한 줄에 [toc] 만 있는 문단(맨 바깥 단계)은 그 자리에 목차가 나오는 toc 블록이 된다.
+ *       - 문서에서 처음 나온 하나만 쓰고, 나머지는 버리며 warnings 에 남긴다 (목차 id 가 겹치지 않게).
+ *       - 첫 제목 전에 쓴 [toc] 는 lead 에 담긴다 (첫 제목 전의 글은 버리지만 목차 자리는 남긴다).
+ *       - 인용문, 리스트, CSS 블록 안의 [toc] 는 목차가 아니라 글자로 남는다. \[toc] 도 글자다.
  *   - 각주 내용이 굵게 같은 서식을 가로지르면 각주로 인식하지 못한다 (알려진 한계).
  */
 
@@ -36,6 +45,7 @@ type MdNode = {
   ordered?: boolean;
   align?: (string | null)[];
   children?: MdNode[];
+  position?: { start: { offset?: number }; end: { offset?: number } };
 };
 
 /* 표와 이미지의 제한 (docs/wiki-syntax.md 5장) */
@@ -52,6 +62,10 @@ export interface ParsedWiki {
   footnotes: string[];
   /** 편집 화면에 보여 줄 경고 (버린 CSS 선언 등). 읽기 화면에서는 쓰지 않는다. */
   warnings: string[];
+  /** 메타 블록의 분류와 정보 상자 */
+  meta: WikiMeta;
+  /** 첫 제목 전에 쓴 [toc] (있으면 toc 블록 하나). 문서 본문 맨 앞에 놓는다. */
+  lead: WikiBlock[];
 }
 
 interface StyleBlockSource {
@@ -286,6 +300,14 @@ function extractStyleBlocks(markdown: string): { text: string; blocks: StyleBloc
   return { text: out.join("\n"), blocks };
 }
 
+/* 문단이 [toc] 한 줄뿐인지. 원문을 보고 판단해서 \[toc] 처럼 이스케이프한 것은 글자로 남긴다. */
+function isTocParagraph(node: MdNode, source: string): boolean {
+  const start = node.position?.start.offset;
+  const end = node.position?.end.offset;
+  if (start === undefined || end === undefined) return false;
+  return source.slice(start, end).trim().toLowerCase() === "[toc]";
+}
+
 /* 주소에서 파일 이름만 꺼낸다 (설명이 없을 때 대신 쓴다) */
 function fileName(src: string): string {
   return src.split("/").pop() ?? src;
@@ -301,18 +323,34 @@ function plainText(nodes: MdNode[] = []): string {
 const BLOCK_TYPES = new Set(["paragraph", "list", "blockquote", "thematicBreak", "table"]);
 
 export function parseWiki(markdown: string): ParsedWiki {
-  const { text, blocks } = extractStyleBlocks(markdown);
+  const uncommented = stripComments(markdown);
+  const withoutMeta = extractMeta(uncommented, isSafeImageSrc);
+  const { text, blocks } = extractStyleBlocks(withoutMeta.text);
   const tree = processor.parse(text) as MdNode;
   const footnotes: string[] = [];
-  const ctx: Ctx = { footnotes, warnings: [], styled: blocks };
+  const ctx: Ctx = { footnotes, warnings: [...withoutMeta.warnings], styled: blocks };
   const root: WikiSection[] = [];
+  const lead: WikiBlock[] = [];
+  let tocSeen = false;
   // stack[i]는 (i+1)단계 문단
   const stack: WikiSection[] = [];
 
   for (const node of tree.children ?? []) {
+    if (node.type === "paragraph" && isTocParagraph(node, text)) {
+      if (tocSeen) {
+        ctx.warnings.push("[toc] 는 한 번만 쓸 수 있어 두 번째부터 버렸습니다.");
+      } else {
+        tocSeen = true;
+        const target = stack[stack.length - 1];
+        (target ? target.blocks : lead).push({ type: "toc" });
+      }
+      continue;
+    }
+
     if (node.type === "heading" && node.depth !== undefined) {
       if (node.depth < 2) continue; // # 은 문서 제목 자리
-      const level = node.depth - 2; // ## -> 0
+      // ## 다음에 바로 #### 처럼 단계를 건너뛰면 가장 가까운 윗단계 아래에 둔다
+      const level = Math.min(node.depth - 2, stack.length); // ## -> 0
       const section: WikiSection = { title: plainText(node.children), blocks: [] };
       stack.length = Math.min(stack.length, level);
       if (level === 0) root.push(section);
@@ -331,7 +369,7 @@ export function parseWiki(markdown: string): ParsedWiki {
     }
   }
 
-  return { sections: root, footnotes, warnings: ctx.warnings };
+  return { sections: root, footnotes, warnings: ctx.warnings, meta: withoutMeta.meta, lead };
 }
 
 /* 문단 구조만 필요할 때 */

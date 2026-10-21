@@ -30,7 +30,9 @@ export type WikiBlock =
   | { type: "table"; align: ("left" | "center" | "right" | null)[]; head: WikiInline[][]; rows: WikiInline[][][] }
   | { type: "image"; src: string; alt: string }
   /** CSS 블록: 허용 목록을 통과한 선언만 담긴다 (파서에서 걸러진다). 이름은 camelCase. */
-  | { type: "style"; style: Record<string, string>; children: WikiBlock[] };
+  | { type: "style"; style: Record<string, string>; children: WikiBlock[] }
+  /** [toc] 를 쓴 자리. 목차는 문서의 문단 제목에서 만든다. */
+  | { type: "toc" };
 
 export interface WikiListItem {
   content: WikiInline[];
@@ -61,6 +63,8 @@ interface WikiDocumentProps {
   categories: string[];
   infobox: WikiInfoboxData;
   sections: WikiSection[];
+  /** 첫 문단 제목 앞에 놓을 블록 (첫 제목 전에 쓴 [toc]) */
+  lead?: WikiBlock[];
   footnotes: string[];
 }
 
@@ -122,7 +126,7 @@ function Inline({ part, footnotes }: { part: WikiInline; footnotes: string[] }) 
   );
 }
 
-function Blocks({ blocks, footnotes }: { blocks: WikiBlock[]; footnotes: string[] }) {
+function Blocks({ blocks, footnotes, toc }: { blocks: WikiBlock[]; footnotes: string[]; toc: TocItem[] }) {
   return (
     <>
       {blocks.map((block, i) => {
@@ -144,7 +148,7 @@ function Blocks({ blocks, footnotes }: { blocks: WikiBlock[]; footnotes: string[
                     {item.content.map((part, k) => (
                       <Inline key={k} part={part} footnotes={footnotes} />
                     ))}
-                    {item.nested ? <Blocks blocks={item.nested} footnotes={footnotes} /> : null}
+                    {item.nested ? <Blocks blocks={item.nested} footnotes={footnotes} toc={toc} /> : null}
                   </li>
                 ))}
               </List>
@@ -153,7 +157,7 @@ function Blocks({ blocks, footnotes }: { blocks: WikiBlock[]; footnotes: string[
           case "quote":
             return (
               <blockquote key={i} className={styles.quote}>
-                <Blocks blocks={block.children} footnotes={footnotes} />
+                <Blocks blocks={block.children} footnotes={footnotes} toc={toc} />
               </blockquote>
             );
           case "hr":
@@ -190,11 +194,13 @@ function Blocks({ blocks, footnotes }: { blocks: WikiBlock[]; footnotes: string[
                 </table>
               </div>
             );
+          case "toc":
+            return <WikiToc key={i} items={toc} />;
           case "style":
             // 스타일은 style 속성으로만 준다 (<style> 태그나 HTML 주입은 쓰지 않는다)
             return (
               <div key={i} style={block.style as CSSProperties}>
-                <Blocks blocks={block.children} footnotes={footnotes} />
+                <Blocks blocks={block.children} footnotes={footnotes} toc={toc} />
               </div>
             );
           case "image":
@@ -211,7 +217,7 @@ function Blocks({ blocks, footnotes }: { blocks: WikiBlock[]; footnotes: string[
   );
 }
 
-function Sections({ items, footnotes }: { items: Numbered[]; footnotes: string[] }) {
+function Sections({ items, footnotes, toc }: { items: Numbered[]; footnotes: string[]; toc: TocItem[] }) {
   return items.map((item) => {
     const Heading = `h${item.headingLevel}` as "h2" | "h3" | "h4" | "h5" | "h6";
     return (
@@ -220,8 +226,8 @@ function Sections({ items, footnotes }: { items: Numbered[]; footnotes: string[]
           <span className={styles.number}>{item.number}</span>
           {item.section.title}
         </Heading>
-        <Blocks blocks={item.section.blocks} footnotes={footnotes} />
-        <Sections items={item.children} footnotes={footnotes} />
+        <Blocks blocks={item.section.blocks} footnotes={footnotes} toc={toc} />
+        <Sections items={item.children} footnotes={footnotes} toc={toc} />
       </section>
     );
   });
@@ -240,9 +246,11 @@ export default function WikiDocument({
   categories,
   infobox,
   sections,
+  lead = [],
   footnotes,
 }: WikiDocumentProps) {
   const numbered = numberSections(sections);
+  const toc = toTocItems(numbered);
 
   return (
     <article className={styles.doc}>
@@ -302,8 +310,9 @@ export default function WikiDocument({
 
       <Card className={styles.body}>
         <WikiInfobox {...infobox} />
-        <WikiToc items={toTocItems(numbered)} />
-        <Sections items={numbered} footnotes={footnotes} />
+        {/* 목차는 작성자가 [toc] 를 쓴 자리에만 나온다 (자동으로 만들지 않는다) */}
+        <Blocks blocks={lead} footnotes={footnotes} toc={toc} />
+        <Sections items={numbered} footnotes={footnotes} toc={toc} />
 
         {footnotes.length > 0 ? (
           <section className={styles.footnotes} aria-labelledby="fn-title">

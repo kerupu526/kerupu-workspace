@@ -148,3 +148,80 @@ test("CSS 블록이 없는 문서는 이전과 같다", () => {
     { type: "p", children: [{ strong: ["굵게"] }, " 와 ", { link: { href: "/a", children: ["링크"] } }] },
   ]);
 });
+
+/* ---- 5단계 뒤: 메타 블록, 목차, 주석 ---- */
+
+test("[toc] 는 그 자리에 toc 블록이 된다", () => {
+  const blocks = firstBlocks(["## 개요", "앞", "", "[toc]", "", "뒤"].join("\n"));
+  assert.deepEqual(
+    blocks.map((b) => b.type),
+    ["p", "toc", "p"],
+  );
+});
+
+test("첫 제목 전의 [toc] 는 lead 에 담긴다", () => {
+  const parsed = parseWiki(["[toc]", "", "## 개요", "본문"].join("\n"));
+  assert.deepEqual(parsed.lead, [{ type: "toc" }]);
+  assert.deepEqual(parsed.sections[0].blocks, [{ type: "p", children: ["본문"] }]);
+});
+
+test("[toc] 는 대소문자와 앞뒤 공백을 가리지 않는다", () => {
+  assert.equal(firstBlocks("## 개요\n\n[TOC]\n")[0].type, "toc");
+  assert.equal(firstBlocks("## 개요\n\n [toc] \n")[0].type, "toc");
+});
+
+test("[toc] 는 한 번만 쓴다", () => {
+  const parsed = parseWiki(["## 가", "[toc]", "", "## 나", "[toc]"].join("\n"));
+  assert.equal(parsed.sections[0].blocks[0].type, "toc");
+  assert.equal(parsed.sections[1].blocks.length, 0);
+  assert.equal(parsed.warnings.length, 1);
+});
+
+test("글 중간의 [toc], 이스케이프한 \\[toc], 인용문·CSS 블록 안의 [toc] 는 글자다", () => {
+  const types = (md: string) => JSON.stringify(firstBlocks(md));
+  assert.ok(!types("## 개요\n\n여기 [toc] 입니다\n").includes('"toc"'));
+  assert.ok(!types("## 개요\n\n\\[toc]\n").includes('"type":"toc"'));
+  assert.deepEqual(firstBlocks("## 개요\n\n\\[toc]\n"), [{ type: "p", children: ["[toc]"] }]);
+  assert.ok(!types("## 개요\n\n> [toc]\n").includes('"type":"toc"'));
+  assert.ok(!types("## 개요\n:::style\ncolor: red;\n:::\n[toc]\n:::\n").includes('"type":"toc"'));
+});
+
+test("제목 단계를 건너뛰어도 오류 없이 가장 가까운 윗 문단 아래에 둔다", () => {
+  const parsed = parseWiki(["## 가", "#### 깊은", "본문"].join("\n"));
+  assert.equal(parsed.sections[0].children?.[0].title, "깊은");
+});
+
+test("메타 블록은 meta 로 나오고 본문에는 남지 않는다", () => {
+  const parsed = parseWiki(
+    ["---", "분류: 가, 나", "정보:", "  제목: 이름", "  작품: 작", "이미지: /uploads/a.png", "---", "## 개요", "본문"].join("\n"),
+  );
+  assert.deepEqual(parsed.meta.categories, ["가", "나"]);
+  assert.equal(parsed.meta.infobox.title, "이름");
+  assert.deepEqual(parsed.meta.infobox.rows, [{ label: "작품", value: "작" }]);
+  assert.equal(parsed.meta.infobox.image, "/uploads/a.png");
+  assert.equal(parsed.sections.length, 1);
+  assert.deepEqual(parsed.sections[0].blocks, [{ type: "p", children: ["본문"] }]);
+});
+
+test("메타 블록의 경고는 warnings 에 합쳐진다", () => {
+  const parsed = parseWiki("---\n작가: x\n---\n## 개요\n:::style\nposition: fixed;\n:::\n글\n:::\n");
+  assert.equal(parsed.warnings.length, 2);
+});
+
+test("메타 블록이 없는 문서의 meta 는 비어 있다", () => {
+  assert.deepEqual(parseWiki("## 개요\n본문").meta, { categories: [], infobox: { rows: [] } });
+});
+
+test("주석은 읽기 결과에 남지 않는다", () => {
+  const parsed = parseWiki(["## 개요", "%% 편집 메모", "본문 %%이것도%% 이어짐", "^[각주]"].join("\n"));
+  assert.deepEqual(parsed.sections[0].blocks, [
+    // 줄바꿈은 문단 안에 \n 으로 남는다 (화면에서는 공백으로 보인다)
+    { type: "p", children: ["본문  이어짐\n", { footnote: 1 }] },
+  ]);
+  assert.deepEqual(parsed.footnotes, ["각주"]);
+});
+
+test("주석 안의 각주와 CSS 블록은 없는 것으로 친다", () => {
+  const parsed = parseWiki(["## 개요", "%% ^[숨은 각주]", "본문"].join("\n"));
+  assert.deepEqual(parsed.footnotes, []);
+});

@@ -40,6 +40,15 @@
   font-size: var(--text-label-size);
 }
 
+/* 올린 이미지: 자리와 같은 정사각형 안에 비율을 지켜 채운다 */
+.picture {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-field);
+}
+
 .label,
 .value {
   padding: var(--space-8) var(--space-16);
