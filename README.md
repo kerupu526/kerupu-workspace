@@ -6,7 +6,8 @@
 - 스타일: CSS 변수 + CSS Modules (UI 라이브러리, Tailwind 없음)
 - 패키지 매니저: npm
 
-현재 단계: **환경 구축**. 라우트는 `h1`만 있는 뼈대이고, 백엔드·인증·실제 기능은 아직 없다.
+현재 단계: **프론트엔드 작업**. `/`, `/about`, `/login` 세 화면은 자리표시 내용으로 화면을 만들었다.
+나머지 라우트는 `h1`만 있는 뼈대이고, 백엔드·인증·실제 기능은 아직 없다.
 
 ## 실행 방법
 
@@ -36,7 +37,8 @@ src/
     playlist/        /playlist
     dictionary/      /dictionary, /dictionary/[slug]
     not-found.tsx    404
-  components/      Header, HeaderNav, Footer, PixelIcon (+ CSS Modules)
+  components/      Header, HeaderNav, Footer, PixelIcon,
+                   Card, Button, ProfileCard, PageFrame, AuthForms (+ CSS Modules)
   styles/
     tokens.css       디자인 토큰 (CSS 변수)
     fonts.css        Mona12 @font-face

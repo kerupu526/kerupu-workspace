@@ -1,0 +1,8 @@
+.frame {
+  width: 100%;
+  max-width: 1920px;
+  /* margin-block: auto 로 헤더와 푸터 사이 세로 가운데에 놓는다 */
+  margin: auto;
+  /* 와이어프레임 실측값: 좌우 여백 약 102px (토큰에 없음, 확인 필요) */
+  padding: var(--space-48) 102px;
+}

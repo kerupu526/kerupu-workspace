@@ -1,0 +1,67 @@
+.forms {
+  display: grid;
+  grid-template-columns: repeat(2, var(--card-width));
+  justify-content: center;
+  gap: var(--space-48);
+}
+
+.card {
+  --card-h: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: var(--card-height);
+  padding: var(--space-48);
+}
+
+.title {
+  margin: 0 0 var(--space-24);
+  font-size: var(--text-heading-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.label {
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 입력창 테두리는 card-border 가 아니라 main-logo 3px */
+.input {
+  width: 100%;
+  height: var(--field-height);
+  padding: 0 var(--space-24);
+  background: var(--surface-page);
+  border: var(--border-width) solid var(--ui-border);
+  border-radius: var(--radius-pill);
+  color: var(--main-logo);
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-regular);
+}
+
+.input:focus-visible {
+  outline: 3px solid var(--main-logo);
+  outline-offset: 4px;
+}
+
+.message {
+  margin: 0;
+  font-size: var(--text-caption-size);
+}
+
+/* 제출 버튼은 카드 맨 아래에 붙인다 */
+.submit {
+  width: 100%;
+  margin-top: auto;
+}

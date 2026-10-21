@@ -1,0 +1,9 @@
+.card {
+  width: var(--card-w, var(--card-width));
+  height: var(--card-h, var(--card-height));
+  background: var(--card-surface);
+  border: var(--border-width) solid var(--card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  color: var(--main-logo);
+}

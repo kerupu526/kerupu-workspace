@@ -1,0 +1,83 @@
+.layout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-48);
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-24);
+  min-width: 0;
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--text-heading-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.intro {
+  --card-w: 100%;
+  --card-h: auto;
+  /* 와이어프레임 실측값: 소개 상자 높이 약 404px (토큰에 없음, 확인 필요) */
+  min-height: 404px;
+  padding: var(--space-48);
+}
+
+.text {
+  margin: 0;
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-regular);
+}
+
+.links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-24);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link {
+  --card-w: 100%;
+  /* 와이어프레임 실측값: 링크 카드 높이 약 150px (토큰에 없음, 확인 필요) */
+  --card-h: 150px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-24);
+  padding: 0 var(--space-32);
+}
+
+/* 지름 72px 자리표시 원 (아이콘 자리) */
+.mark {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  border: var(--border-width) solid var(--ui-border);
+  border-radius: 50%;
+}
+
+.linkText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.linkName,
+.linkNote {
+  margin: 0;
+}
+
+.linkName {
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.linkNote {
+  font-size: var(--text-caption-size);
+  font-weight: var(--font-weight-regular);
+}
