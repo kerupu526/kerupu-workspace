@@ -403,3 +403,41 @@ export function toReactStyle(style: Record<string, string>): Record<string, stri
   }
   return out;
 }
+
+/* ---- 편집기 자동완성용 ---- */
+
+/** CSS 블록에서 쓸 수 있는 속성 이름 (가나다/알파벳 순) */
+export const ALLOWED_PROPERTY_NAMES: string[] = [...ALLOWED_PROPERTIES].sort();
+
+const COLOR_TOKENS = ["main-logo", "surface-page", "main-header", "card-surface", "card-border", "ui-border", "state-error", "state-success"];
+const SPACE_TOKENS = ["space-8", "space-12", "space-16", "space-24", "space-32", "space-48"];
+const RADIUS_TOKENS = ["radius-card", "radius-pill", "radius-field"];
+const TEXT_TOKENS = ["text-title-size", "text-heading-size", "text-body-size", "text-label-size", "text-caption-size"];
+
+/* 이 속성에 var(--토큰) 으로 쓸 만한 토큰 */
+function tokensFor(prop: string): string[] {
+  if (prop === "color" || prop.endsWith("-color") || prop === "background" || prop === "border" || /^border-(top|right|bottom|left)$/.test(prop)) {
+    return COLOR_TOKENS;
+  }
+  if (/^(margin|padding)(-|$)/.test(prop) || prop === "gap" || prop === "text-indent") return SPACE_TOKENS;
+  if (prop.endsWith("radius")) return RADIUS_TOKENS;
+  if (prop === "font-size") return TEXT_TOKENS;
+  if (prop === "font-weight") return ["font-weight-regular", "font-weight-bold"];
+  if (prop === "box-shadow") return ["main-shadow", "card-shadow"];
+  return [];
+}
+
+/**
+ * 속성 값으로 제안할 만한 것. 값이 정해진 속성은 허용된 값 전부, 그 밖에는 디자인 토큰과 흔한 값 몇 개.
+ * 여기 나온 값은 모두 sanitizeStyle 을 통과한다 (테스트로 확인한다).
+ */
+export function cssValueSuggestions(prop: string): string[] {
+  const fixed = WHOLE_VALUE[prop] ?? EACH_VALUE[prop];
+  if (fixed) return [...fixed];
+  if (prop === "line-height") return ["1.2", "1.4", "1.6", "1.8", "2", "2.2"];
+  const tokens = tokensFor(prop)
+    .filter((name) => VAR_TOKENS.has(name))
+    .map((name) => `var(--${name})`);
+  if (prop === "color" || prop === "background" || prop === "background-color") return [...tokens, "#647260"];
+  return tokens;
+}

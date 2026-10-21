@@ -1,0 +1,136 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-title-size);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-12);
+}
+
+.notice {
+  margin: 0;
+  font-size: var(--text-label-size);
+}
+
+.notice kbd {
+  padding: 0 var(--space-8);
+  border: var(--border-width) solid var(--card-border);
+  border-radius: var(--radius-field);
+  background: var(--card-surface);
+  font-family: inherit;
+  font-size: var(--text-caption-size);
+}
+
+/* 원문과 미리보기를 나란히. 높이는 같게 맞추고 안쪽에서 스크롤한다. */
+.panes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-24);
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.paneTitle {
+  margin: 0;
+  font-size: var(--text-heading-size);
+}
+
+.editorBox,
+.preview {
+  /* 편집기 포커스 링(바깥 4px + 3px)이 잘리지 않도록 여백을 둔다 */
+  --pane-height: calc(780 * var(--px));
+  height: var(--pane-height);
+}
+
+.editorBox {
+  overflow: hidden;
+  margin: var(--space-8);
+  border: var(--border-width) solid var(--card-border);
+  border-radius: var(--radius-field);
+}
+
+/* Card 는 450x700 이 기본이라 이 화면에서는 칸을 가득 채운다 */
+.preview {
+  --card-w: 100%;
+  --card-h: var(--pane-height);
+  overflow: hidden;
+}
+
+.previewScroll {
+  height: 100%;
+  overflow: auto;
+  padding: var(--space-24);
+}
+
+.warnings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.count {
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-regular);
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--text-label-size);
+}
+
+.warningList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.warning {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-12);
+  padding: var(--space-8) var(--space-16);
+  border: var(--border-width) solid var(--card-border);
+  border-left: calc(6 * var(--px)) solid var(--state-error);
+  border-radius: var(--radius-field);
+  background: var(--card-surface);
+  font-size: var(--text-label-size);
+}
+
+.where {
+  font-weight: var(--font-weight-bold);
+}
+
+.jump {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  text-decoration: underline;
+  cursor: pointer;
+}

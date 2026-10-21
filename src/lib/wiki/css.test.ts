@@ -275,3 +275,15 @@ test("toReactStyle 은 이름을 camelCase 로 바꾼다", () => {
     borderTopLeftRadius: "4px",
   });
 });
+
+test("자동완성이 제안하는 속성과 값은 모두 필터를 통과한다", async () => {
+  const { ALLOWED_PROPERTY_NAMES, cssValueSuggestions } = await import("./css.ts");
+  assert.ok(ALLOWED_PROPERTY_NAMES.includes("text-align"));
+  assert.ok(!ALLOWED_PROPERTY_NAMES.includes("position"));
+  assert.ok(!ALLOWED_PROPERTY_NAMES.includes("background-image"));
+  for (const prop of ALLOWED_PROPERTY_NAMES) {
+    for (const value of cssValueSuggestions(prop)) {
+      assert.equal(sanitizeStyle(`${prop}: ${value};`).style[prop], value, `${prop}: ${value}`);
+    }
+  }
+});

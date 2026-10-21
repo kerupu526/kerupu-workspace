@@ -52,7 +52,7 @@ export interface Crumb {
   href?: string;
 }
 
-interface WikiDocumentProps {
+export interface WikiDocumentProps {
   /** 이 문서가 어디에 속하는지 보여 주는 현재 위치 (맨 앞이 가장 상위) */
   breadcrumb: Crumb[];
   /** "문서" 메뉴가 가리키는, 지금 이 문서의 주소 */
@@ -66,6 +66,10 @@ interface WikiDocumentProps {
   /** 첫 문단 제목 앞에 놓을 블록 (첫 제목 전에 쓴 [toc]) */
   lead?: WikiBlock[];
   footnotes: string[];
+  /** 있으면 "편집" 메뉴가 이 주소로 가는 링크가 된다. 없으면 점선 모양의 비활성 버튼이다. */
+  editHref?: string;
+  /** 편집 화면의 미리보기로 쓸 때: 문서 메뉴를 숨긴다 (눌러서 편집 중인 글을 잃지 않게) */
+  preview?: boolean;
 }
 
 interface Numbered {
@@ -236,7 +240,7 @@ function Sections({ items, footnotes, toc }: { items: Numbered[]; footnotes: str
 /*
  * 위키 문서 한 편. 나무위키 같은 the seed 계열 위키의 화면 관습을 따른다.
  *   제목과 문서 메뉴 → 최근 수정 시각 → 분류 → (오른쪽 정보 상자) → 목차 → 번호 붙은 문단 → 각주
- * 내용은 모두 자리표시이고, 편집·역사 같은 위키 기능은 아직 없다.
+ * 편집은 편집 화면으로 가는 링크(editHref)이고, 역사 같은 나머지 위키 기능은 아직 없다.
  */
 export default function WikiDocument({
   breadcrumb,
@@ -248,6 +252,8 @@ export default function WikiDocument({
   sections,
   lead = [],
   footnotes,
+  editHref,
+  preview = false,
 }: WikiDocumentProps) {
   const numbered = numberSections(sections);
   const toc = toTocItems(numbered);
@@ -280,18 +286,26 @@ export default function WikiDocument({
         </nav>
         <div className={styles.titleRow}>
           <h1 className={styles.title}>{title}</h1>
-          <nav className={styles.menu} aria-label="문서 메뉴">
-            <ButtonLink href={href} size="compact" aria-current="page">
-              문서
-            </ButtonLink>
-            {/* 편집과 역사는 위키 기능이 생기면 쓸 수 있다. 지금은 점선 모양의 비활성 버튼이다. */}
-            <Button variant="dashed" size="compact" disabled>
-              편집<span className="visually-hidden"> (준비 중)</span>
-            </Button>
-            <Button variant="dashed" size="compact" disabled>
-              역사<span className="visually-hidden"> (준비 중)</span>
-            </Button>
-          </nav>
+          {preview ? null : (
+            <nav className={styles.menu} aria-label="문서 메뉴">
+              <ButtonLink href={href} size="compact" aria-current="page">
+                문서
+              </ButtonLink>
+              {editHref ? (
+                <ButtonLink href={editHref} variant="secondary" size="compact">
+                  편집
+                </ButtonLink>
+              ) : (
+                <Button variant="dashed" size="compact" disabled>
+                  편집<span className="visually-hidden"> (준비 중)</span>
+                </Button>
+              )}
+              {/* 역사는 위키 기능이 생기면 쓸 수 있다. 지금은 점선 모양의 비활성 버튼이다. */}
+              <Button variant="dashed" size="compact" disabled>
+                역사<span className="visually-hidden"> (준비 중)</span>
+              </Button>
+            </nav>
+          )}
         </div>
         <p className={styles.meta}>최근 수정 시각: {modified}</p>
         <div className={styles.categories}>
