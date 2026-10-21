@@ -142,7 +142,15 @@ docker compose up -d --build
 | `NEXT_PUBLIC_SUPABASE_URL` | 공개 (브라우저로 나감) | **빌드할 때** 코드에 박힘 + 실행 |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 공개 (브라우저로 나감) | **빌드할 때** 코드에 박힘 + 실행 |
 | `SUPABASE_SERVICE_ROLE_KEY` | **비밀** (RLS 우회) | 실행할 때만. 서버 코드에서만 가져온다 |
-| `SUPABASE_DB_PASSWORD` | **비밀** | 마이그레이션, 백업 같은 관리 작업에만. 웹 앱은 쓰지 않는다 |
+| `SUPABASE_DB_PASSWORD` | **비밀** | 마이그레이션, 백업 같은 관리 작업에만. 웹 앱은 쓰지 않는다. **`.env`가 아니라 `~/.config/kerupu/admin.env`에 둔다** (아래) |
+
+`.env`는 컨테이너 환경에 통째로 들어가므로, 웹 앱이 쓰지 않는 관리용 비밀(DB 비밀번호)은 컨테이너가 읽지 않는 별도 파일에 둔다.
+
+- 위치: 서버의 `~/.config/kerupu/admin.env` (폴더 700, 파일 600, 저장소 밖)
+- 내용: `SUPABASE_DB_PASSWORD=...` 한 줄
+- 쓰는 법: 관리 작업을 하는 셸에서만 읽는다. 예: `set -a; . ~/.config/kerupu/admin.env; set +a`
+- 확인: `docker exec kerupu printenv | grep -c SUPABASE_DB_PASSWORD` 가 `0`이면 컨테이너에 새지 않은 것이다.
+- DB 비밀번호는 쉽게 짐작되는 값을 쓰지 않는다. Supabase의 DB 주소는 인터넷에서 접속할 수 있으므로, 대시보드(Project Settings > Database)에서 무작위로 만든 긴 값으로 재설정한 뒤 이 파일을 고친다.
 
 지켜야 할 것:
 
