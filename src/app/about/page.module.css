@@ -82,11 +82,6 @@
   font-weight: var(--font-weight-regular);
 }
 
-/* 링크 이름: 글자색은 그대로, 밑줄로 링크임을 보여 준다 */
-.linkAnchor {
-  color: inherit;
-  text-decoration: underline;
-}
 
 /* 링크 아이콘: 서비스 로고 SVG */
 .icon {
@@ -94,4 +89,14 @@
   height: calc(52 * var(--px));
   flex: none;
   object-fit: contain;
+}
+
+/* 카드 전체가 링크: 글자색과 밑줄은 그대로 두지 않는다 (카드 안의 글이 링크처럼 보이지 않게) */
+.linkBox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+  width: 100%;
+  color: inherit;
+  text-decoration: none;
 }

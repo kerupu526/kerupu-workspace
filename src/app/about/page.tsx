@@ -28,16 +28,15 @@ export default function AboutPage() {
         <ul className={styles.links}>
           {ABOUT_LINKS.map((link) => (
             <Card as="li" key={link.name} className={styles.link}>
-              {/* 서비스 로고 (worldvectorlogo.com). 글자가 옆에 있으므로 그림은 장식이다. */}
-              <img src={link.icon} alt="" className={styles.icon} />
-              <div className={styles.linkText}>
-                <p className={styles.linkName}>
-                  <a href={link.href} target="_blank" rel="noopener noreferrer" className={styles.linkAnchor}>
-                    {link.name}
-                  </a>
-                </p>
-                <p className={styles.linkNote}>{link.note}</p>
-              </div>
+              {/* 카드 전체가 하나의 링크다. 키보드로 한 번만 가고, 읽을 때도 이름과 설명이 한 덩어리로 읽힌다. */}
+              <a href={link.href} target="_blank" rel="noopener noreferrer" className={styles.linkBox}>
+                {/* 서비스 로고 (worldvectorlogo.com). 글자가 옆에 있으므로 그림은 장식이다. */}
+                <img src={link.icon} alt="" className={styles.icon} />
+                <div className={styles.linkText}>
+                  <p className={styles.linkName}>{link.name}</p>
+                  <p className={styles.linkNote}>{link.note}</p>
+                </div>
+              </a>
             </Card>
           ))}
         </ul>
