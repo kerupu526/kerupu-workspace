@@ -1,0 +1,40 @@
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: var(--footer-height);
+  margin-top: auto;
+  padding: 0 var(--space-48);
+  background: var(--main-header);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  box-shadow: var(--footer-shadow);
+  color: var(--main-logo);
+}
+
+.id {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title,
+.note,
+.domain {
+  margin: 0;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: var(--font-weight-bold);
+}
+
+.note {
+  font-size: var(--text-caption-size);
+  font-weight: var(--font-weight-regular);
+}
+
+.domain {
+  font-size: 20px;
+  font-weight: var(--font-weight-bold);
+}

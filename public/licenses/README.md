@@ -1,0 +1,1 @@
+License texts that ship with the Mona12 font files in `fonts/`. `mona.txt` is the license of Mona12 itself (SIL Open Font License 1.1, Reserved Font Name "Mona"); the others cover the pixel fonts and emoji it is built from. Keep these next to the fonts wherever they are redistributed.

@@ -1,0 +1,20 @@
+/*
+ * Mona12 (SIL Open Font License 1.1, Reserved Font Name "Mona").
+ * 파일은 변환만 한 원본이다. 서브셋·수정 금지, 단독 판매 금지.
+ * 라이선스 문서는 public/licenses/ 에 둔다.
+ */
+@font-face {
+  font-family: "Mona12";
+  src: url("/fonts/Mona12.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Mona12";
+  src: url("/fonts/Mona12-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}

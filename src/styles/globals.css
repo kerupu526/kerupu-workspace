@@ -1,0 +1,29 @@
+@import "./tokens.css";
+@import "./fonts.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* 푸터를 페이지 맨 아래에 붙이기 위한 세로 배치 */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--surface-page);
+  color: var(--main-logo);
+  font-family: var(--font-display);
+}
+
+/* 본문이 남는 높이를 차지해서 푸터가 아래로 밀린다 */
+main {
+  flex: 1 0 auto;
+}

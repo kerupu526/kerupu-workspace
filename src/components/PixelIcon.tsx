@@ -1,0 +1,146 @@
+/*
+ * 16x16 격자 픽셀 아이콘 (design/components/bundle.js 의 격자와 같은 모양).
+ * "#" 는 현재 색 100%, "+" 는 같은 색 30%, "." 는 비움.
+ * 연속된 같은 문자는 rect 하나로 합친다.
+ */
+
+export type PixelIconName = "about" | "service" | "note" | "login";
+
+const GRIDS: Record<PixelIconName, readonly string[]> = {
+  about: [
+    "................",
+    "................",
+    "................",
+    ".##############.",
+    ".#++++++++++++#.",
+    ".#++####++###+#.",
+    ".#++####++++++#.",
+    ".#++++++++##++#.",
+    ".#+######+++++#.",
+    ".#+######+###+#.",
+    ".#++++++++++++#.",
+    ".#++++++++++++#.",
+    ".##############.",
+    "................",
+    "................",
+    "................",
+  ],
+  service: [
+    "................",
+    ".######..######.",
+    ".#++++#..#++++#.",
+    ".#++++#..#++++#.",
+    ".#++++#..#++++#.",
+    ".#++++#..#++++#.",
+    ".######..######.",
+    "................",
+    "................",
+    ".######...####..",
+    ".#++++#..#++++#.",
+    ".#++++#..#++++#.",
+    ".#++++#..#++++#.",
+    ".#++++#..#++++#.",
+    ".######...####..",
+    "................",
+  ],
+  note: [
+    "................",
+    "..########......",
+    "..#++++++##.....",
+    "..#++++++#+#....",
+    "..#++++++#++#...",
+    "..#++++++#####..",
+    "..#++++++++++#..",
+    "..#+########+#..",
+    "..#++++++++++#..",
+    "..#+######+++#..",
+    "..#++++++++++#..",
+    "..#+#####++++#..",
+    "..#++++++++++#..",
+    "..#++++++++++#..",
+    "..############..",
+    "................",
+  ],
+  login: [
+    "................",
+    "........#######.",
+    "........++++++#.",
+    "........++++++#.",
+    "......##++++++#.",
+    ".......##+++++#.",
+    "........##++++#.",
+    ".##########+++#.",
+    ".##########+++#.",
+    "........##++++#.",
+    ".......##+++++#.",
+    "......##++++++#.",
+    "........++++++#.",
+    "........++++++#.",
+    "........#######.",
+    "................",
+  ],
+};
+
+interface Run {
+  x: number;
+  y: number;
+  width: number;
+  soft: boolean;
+}
+
+function toRuns(rows: readonly string[]): Run[] {
+  const runs: Run[] = [];
+  rows.forEach((row, y) => {
+    let x = 0;
+    while (x < row.length) {
+      const ch = row[x];
+      if (ch === ".") {
+        x += 1;
+        continue;
+      }
+      let end = x;
+      while (end < row.length && row[end] === ch) end += 1;
+      runs.push({ x, y, width: end - x, soft: ch === "+" });
+      x = end;
+    }
+  });
+  return runs;
+}
+
+const RUNS: Record<PixelIconName, Run[]> = {
+  about: toRuns(GRIDS.about),
+  service: toRuns(GRIDS.service),
+  note: toRuns(GRIDS.note),
+  login: toRuns(GRIDS.login),
+};
+
+interface PixelIconProps {
+  name: PixelIconName;
+  className?: string;
+}
+
+export default function PixelIcon({ name, className }: PixelIconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 16 16"
+      width={32}
+      height={32}
+      fill="currentColor"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {RUNS[name].map((r) => (
+        <rect
+          key={`${r.y}-${r.x}`}
+          x={r.x}
+          y={r.y}
+          width={r.width}
+          height={1}
+          fillOpacity={r.soft ? 0.3 : undefined}
+        />
+      ))}
+    </svg>
+  );
+}
