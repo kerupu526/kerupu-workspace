@@ -7,8 +7,18 @@ import WikiInfobox, { type WikiInfoboxData } from "./WikiInfobox";
 import WikiToc, { type TocItem } from "./WikiToc";
 import styles from "./WikiDocument.module.css";
 
-/* 문단 안의 조각: 글자, 또는 각주 번호 */
-export type WikiInline = string | { footnote: number };
+/*
+ * 문단 안의 조각. 글자, 각주 번호, 또는 서식이 걸린 묶음.
+ * 서식 묶음은 안에 다시 조각을 담을 수 있다 (예: 굵은 글자 안의 기울임).
+ */
+export type WikiInline =
+  | string
+  | { footnote: number }
+  | { strong: WikiInline[] }
+  | { em: WikiInline[] }
+  | { del: WikiInline[] }
+  | { code: string }
+  | { link: { href: string; children: WikiInline[] } };
 
 export interface WikiSection {
   title: string;
@@ -70,8 +80,28 @@ function toTocItems(items: Numbered[]): TocItem[] {
 
 function Inline({ part, footnotes }: { part: WikiInline; footnotes: string[] }) {
   if (typeof part === "string") return <>{part}</>;
-  const n = part.footnote;
-  return <FootnoteRef n={n} text={footnotes[n - 1] ?? ""} />;
+  if ("footnote" in part) {
+    const n = part.footnote;
+    return <FootnoteRef n={n} text={footnotes[n - 1] ?? ""} />;
+  }
+  const inner = (list: WikiInline[]) =>
+    list.map((p, i) => <Inline key={i} part={p} footnotes={footnotes} />);
+  if ("strong" in part) return <strong>{inner(part.strong)}</strong>;
+  if ("em" in part) return <em>{inner(part.em)}</em>;
+  if ("del" in part) return <del>{inner(part.del)}</del>;
+  if ("code" in part) return <code className={styles.code}>{part.code}</code>;
+  // 링크는 파서가 안전한 주소만 넘긴다 (/, #, https:// 로 시작)
+  const { href, children } = part.link;
+  const external = /^https?:\/\//.test(href);
+  return (
+    <a
+      href={href}
+      className={styles.link}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+    >
+      {inner(children)}
+    </a>
+  );
 }
 
 function Sections({ items, footnotes }: { items: Numbered[]; footnotes: string[] }) {
