@@ -1,7 +1,16 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+
+/* 이 사이트의 주소 (요청이 들어온 주소를 기준으로. Cloudflare 를 거치면 https 로 본다) */
+async function siteUrl(path: string): Promise<string> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}${path}`;
+}
 
 /* 폼에 보여 줄 결과. 성공하면 다른 페이지로 넘어가므로 메시지는 실패할 때만 있다. */
 export interface AuthState {
@@ -42,8 +51,12 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    // 닉네임은 화면 표시용이다. 권한 판단에는 쓰지 않는다 (user_metadata 는 사용자가 고칠 수 있다).
-    options: { data: { nickname } },
+    options: {
+      // 닉네임은 화면 표시용이다. 권한 판단에는 쓰지 않는다 (user_metadata 는 사용자가 고칠 수 있다).
+      data: { nickname },
+      // 확인 메일의 링크는 이 사이트의 /auth/callback 으로 돌아온다 (대시보드의 Redirect URLs 에 허용되어 있어야 한다)
+      emailRedirectTo: await siteUrl("/auth/callback"),
+    },
   });
   if (error) return { message: "가입하지 못했어요. 이미 쓰는 이메일인지 확인해 주세요." };
 
