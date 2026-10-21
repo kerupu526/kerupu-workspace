@@ -51,9 +51,24 @@ type MdNode = {
   position?: { start: { offset?: number }; end: { offset?: number } };
 };
 
-/* 표와 이미지의 제한 (docs/wiki-syntax.md 5장) */
-const TABLE_MAX_COLS = 12;
-const TABLE_MAX_ROWS = 300;
+/*
+ * 제한 값 (docs/wiki-syntax.md 5장). 넘으면 문서를 거부하지 않고, 넘친 부분만 버리거나 풀어서 남기고
+ * warnings 에 이유를 적는다. (선언 20개는 css.ts, 분류 20개와 정보 30행은 meta.ts 에 있다.)
+ *   - 본문 길이: 넘는 뒤쪽을 자른다 (마지막 줄바꿈 기준).
+ *   - 각주: 200개를 넘는 것은 각주로 만들지 않고 원문 글자로 둔다.
+ *   - 이미지: 50개를 넘는 그림은 설명 글자만 남긴다.
+ *   - 인용문 3단계, 리스트 4단계를 넘는 중첩은 껍데기를 벗기고 안의 내용만 남긴다.
+ *   - 표: 열 12개, 행 300개를 넘으면 표 전체를 버린다.
+ */
+export const LIMITS = {
+  bodyLength: 100_000,
+  footnotes: 200,
+  images: 50,
+  quoteDepth: 3,
+  listDepth: 4,
+  tableCols: 12,
+  tableRows: 300,
+} as const;
 
 /* 이미지 주소는 사이트에 올린 파일만 허용한다 */
 export function isSafeImageSrc(src: string): boolean {
@@ -84,6 +99,19 @@ interface Ctx {
   notes: RawFootnote[];
   warnings: string[];
   styled: StyleBlockSource[];
+  /** 지금까지 만든 이미지 블록 수 */
+  images: number;
+  /** 지금 들어와 있는 인용문, 리스트 중첩 단계 */
+  quoteDepth: number;
+  listDepth: number;
+  /** 같은 종류의 경고를 한 번만 남기기 위한 목록 */
+  warned: Set<string>;
+}
+
+function warnOnce(ctx: Ctx, key: string, message: string) {
+  if (ctx.warned.has(key)) return;
+  ctx.warned.add(key);
+  ctx.warnings.push(message);
 }
 
 /* CSS 블록 자리에 남기는 문단에 쓰는 글자 (사용자 글에서는 먼저 지운다) */
@@ -101,6 +129,10 @@ export function isSafeHref(href: string): boolean {
 function splitFootnotes(text: string, ctx: Ctx): WikiInline[] {
   return splitFootnoteMarks(text).map((piece) => {
     if (typeof piece === "string") return piece;
+    if (ctx.footnotes.length >= LIMITS.footnotes) {
+      warnOnce(ctx, "footnotes", `각주는 ${LIMITS.footnotes}개까지만 쓸 수 있어 그 뒤의 각주는 글자로 남겼습니다.`);
+      return ctx.notes[piece.note]?.source ?? "";
+    }
     ctx.footnotes.push(ctx.notes[piece.note]?.content ?? "");
     return { footnote: ctx.footnotes.length };
   });
@@ -162,7 +194,13 @@ function toListItem(node: MdNode, ctx: Ctx): WikiListItem {
 function toTable(node: MdNode, ctx: Ctx): WikiBlock | null {
   const rows = node.children ?? [];
   const cols = Math.max(0, ...rows.map((r) => (r.children ?? []).length));
-  if (cols === 0 || cols > TABLE_MAX_COLS || rows.length > TABLE_MAX_ROWS) return null;
+  if (cols > LIMITS.tableCols || rows.length > LIMITS.tableRows) {
+    ctx.warnings.push(
+      `표는 열 ${LIMITS.tableCols}개, 행 ${LIMITS.tableRows}개까지만 쓸 수 있어 표를 버렸습니다 (열 ${cols}개, 행 ${rows.length}개).`,
+    );
+    return null;
+  }
+  if (cols === 0) return null;
   const cells = rows.map((r) => (r.children ?? []).map((c) => toInline(c.children, ctx)));
   const align = Array.from({ length: cols }, (_, i) => {
     const a = node.align?.[i];
@@ -191,7 +229,14 @@ function toBlocks(nodes: MdNode[], ctx: Ctx): WikiBlock[] {
         // 문단이 이미지 하나뿐이면 그림 블록으로 바꾼다
         const imageSrc = only?.type === "image" && only.url ? restoreFootnoteText(only.url, ctx.notes) : "";
         if (only && imageSrc && isSafeImageSrc(imageSrc)) {
-          out.push({ type: "image", src: imageSrc, alt: restoreFootnoteText(only.alt ?? "", ctx.notes) || fileName(imageSrc) });
+          const alt = restoreFootnoteText(only.alt ?? "", ctx.notes) || fileName(imageSrc);
+          if (ctx.images >= LIMITS.images) {
+            warnOnce(ctx, "images", `이미지는 ${LIMITS.images}개까지만 쓸 수 있어 그 뒤의 그림은 설명 글자만 남겼습니다.`);
+            out.push({ type: "p", children: [alt] });
+          } else {
+            ctx.images += 1;
+            out.push({ type: "image", src: imageSrc, alt });
+          }
           break;
         }
         out.push({ type: "p", children: toInline(node.children, ctx) });
@@ -202,25 +247,58 @@ function toBlocks(nodes: MdNode[], ctx: Ctx): WikiBlock[] {
         if (table) out.push(table);
         break;
       }
-      case "list":
-        out.push({
-          type: "list",
-          ordered: Boolean(node.ordered),
-          items: (node.children ?? []).map((li) => toListItem(li, ctx)),
-        });
+      case "list": {
+        const tooDeep = ctx.listDepth >= LIMITS.listDepth;
+        if (tooDeep) {
+          warnOnce(ctx, "list", `리스트는 ${LIMITS.listDepth}단계까지만 중첩할 수 있어 더 깊은 항목은 문단으로 풀었습니다.`);
+        }
+        ctx.listDepth += 1;
+        const items = (node.children ?? []).map((li) => toListItem(li, ctx));
+        ctx.listDepth -= 1;
+        if (tooDeep) {
+          for (const item of items) {
+            out.push({ type: "p", children: item.content });
+            if (item.nested) out.push(...item.nested);
+          }
+        } else {
+          out.push({ type: "list", ordered: Boolean(node.ordered), items });
+        }
         break;
-      case "blockquote":
-        out.push({ type: "quote", children: toBlocks(node.children ?? [], ctx) });
+      }
+      case "blockquote": {
+        const tooDeep = ctx.quoteDepth >= LIMITS.quoteDepth;
+        if (tooDeep) {
+          warnOnce(ctx, "quote", `인용문은 ${LIMITS.quoteDepth}단계까지만 중첩할 수 있어 더 깊은 인용 표시는 없앴습니다.`);
+        }
+        ctx.quoteDepth += 1;
+        const children = toBlocks(node.children ?? [], ctx);
+        ctx.quoteDepth -= 1;
+        if (tooDeep) out.push(...children);
+        else out.push({ type: "quote", children });
+        break;
+      }
+      case "html":
+        // HTML 은 쓸 수 없다. 태그를 해석하지 않고 쓴 그대로 글자로 보여 준다 (docs/wiki-syntax.md 1장 3번).
+        out.push({ type: "p", children: splitFootnotes(node.value ?? "", ctx) });
         break;
       case "thematicBreak":
         out.push({ type: "hr" });
         break;
       default:
-        // 아직 처리하지 않는 블록(코드, 표, 이미지 등)은 버린다
+        // 처리하지 않는 블록(코드 등)은 버린다
+        warnDropped(node, ctx);
         break;
     }
   }
   return out;
+}
+
+/* 버리는 블록 중 작성자가 알아야 할 것만 경고한다 */
+function warnDropped(node: MdNode, ctx: Ctx) {
+  if (node.type === "code") warnOnce(ctx, "code", "코드 블록은 지원하지 않아 버렸습니다.");
+  else if (node.type === "footnoteDefinition") {
+    warnOnce(ctx, "footnoteDefinition", "[^1]: 형식의 각주는 쓸 수 없어 버렸습니다. 본문에 ^[내용] 으로 씁니다.");
+  }
 }
 
 /* CSS 블록 하나를 위키 블록으로 바꾼다. 통과한 선언이 없으면 감싸지 않고 안쪽 블록만 남긴다. */
@@ -238,6 +316,8 @@ function toStyleBlock(source: StyleBlockSource | undefined, ctx: Ctx): WikiBlock
       ctx.warnings.push(`CSS 블록 안에서는 제목을 쓸 수 없어 버렸습니다: "${plainText(node.children, ctx.notes)}"`);
     } else if (BLOCK_TYPES.has(node.type)) {
       children.push(...toBlocks([node], ctx));
+    } else {
+      warnDropped(node, ctx);
     }
   }
 
@@ -321,10 +401,17 @@ function plainText(nodes: MdNode[] = [], notes: RawFootnote[]): string {
   );
 }
 
-const BLOCK_TYPES = new Set(["paragraph", "list", "blockquote", "thematicBreak", "table"]);
+const BLOCK_TYPES = new Set(["paragraph", "list", "blockquote", "thematicBreak", "table", "html"]);
 
 export function parseWiki(markdown: string): ParsedWiki {
-  const uncommented = stripComments(markdown);
+  const warnings: string[] = [];
+  let source = markdown;
+  if (source.length > LIMITS.bodyLength) {
+    const cut = source.lastIndexOf("\n", LIMITS.bodyLength);
+    source = source.slice(0, cut > 0 ? cut : LIMITS.bodyLength);
+    warnings.push(`문서가 ${LIMITS.bodyLength.toLocaleString("en-US")}자를 넘어 뒤쪽을 잘랐습니다.`);
+  }
+  const uncommented = stripComments(source);
   const withoutMeta = extractMeta(uncommented, isSafeImageSrc);
   const withNotes = extractFootnotes(withoutMeta.text);
   const { text, blocks } = extractStyleBlocks(withNotes.text);
@@ -333,8 +420,12 @@ export function parseWiki(markdown: string): ParsedWiki {
   const ctx: Ctx = {
     footnotes,
     notes: withNotes.notes,
-    warnings: [...withoutMeta.warnings, ...withNotes.warnings],
+    warnings: [...warnings, ...withoutMeta.warnings, ...withNotes.warnings],
     styled: blocks,
+    images: 0,
+    quoteDepth: 0,
+    listDepth: 0,
+    warned: new Set(),
   };
   const root: WikiSection[] = [];
   const lead: WikiBlock[] = [];
@@ -355,7 +446,11 @@ export function parseWiki(markdown: string): ParsedWiki {
     }
 
     if (node.type === "heading" && node.depth !== undefined) {
-      if (node.depth < 2) continue; // # 은 문서 제목 자리
+      if (node.depth < 2) {
+        // # 은 문서 제목 자리
+        warnOnce(ctx, "h1", "# 제목은 문서 제목 자리라서 본문에서 버렸습니다. 문단 제목은 ## 부터 씁니다.");
+        continue;
+      }
       // ## 다음에 바로 #### 처럼 단계를 건너뛰면 가장 가까운 윗단계 아래에 둔다
       const level = Math.min(node.depth - 2, stack.length); // ## -> 0
       const section: WikiSection = { title: plainText(node.children, ctx.notes), blocks: [] };
@@ -371,8 +466,13 @@ export function parseWiki(markdown: string): ParsedWiki {
 
     if (BLOCK_TYPES.has(node.type)) {
       const target = stack[stack.length - 1];
-      if (!target) continue;
+      if (!target) {
+        warnOnce(ctx, "lead", "첫 문단 제목(##) 앞의 글은 문서에 나오지 않아 버렸습니다.");
+        continue;
+      }
       target.blocks.push(...toBlocks([node], ctx));
+    } else {
+      warnDropped(node, ctx);
     }
   }
 
