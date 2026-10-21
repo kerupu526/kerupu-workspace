@@ -1,0 +1,40 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; }
+  body { background: var(--surface-page); }
+  .wrap { width: 960px; height: 288px; position: relative; }
+  svg { display: block; width: 960px; height: 288px; }
+  .hdr { fill: var(--main-header); }
+  .tile { fill: var(--card-surface); stroke: var(--card-border); stroke-width: var(--border-width); }
+  .logo { fill: var(--main-logo); }
+  .pale { fill: var(--surface-page); }
+  .name { fill: var(--main-logo); font-family: var(--font-display); font-weight: 700; font-size: 64px; }
+  .tag { fill: var(--main-logo); font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<svg viewBox="0 0 960 288" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="kerupu_workspace">
+  <!--
+    blocks: main-header slab 600x104 with radius-card bottom corners; card-surface tile 168x104 (card-border outline); main-logo block 144x104 bleeding off the right edge.
+    arrangement: one strip of three unequal bands across the top, like the header band itself, name beneath on the page ground.
+    pattern: soft, large radii -> four discs of main-logo on the slab at a space-96 pitch, echoing the four nav icons in the header.
+    steps and radii: space-96 pitch, space-16/space-24 insets, radius-card 40 on the slab, tile and block.
+  -->
+  <path class="hdr" d="M0 0H600V64A40 40 0 0 1 560 104H40A40 40 0 0 1 0 64Z"/>
+  <circle class="logo" cx="216" cy="52" r="24"/>
+  <circle class="logo" cx="312" cy="52" r="24"/>
+  <circle class="logo" cx="408" cy="52" r="24"/>
+  <circle class="logo" cx="504" cy="52" r="24"/>
+  <path class="tile" d="M624 0H792V64A40 40 0 0 1 752 104H664A40 40 0 0 1 624 64Z"/>
+  <path class="logo" d="M816 0H960V104H856A40 40 0 0 1 816 64Z"/>
+  <text class="name" x="24" y="196">kerupu_workspace</text>
+  <text class="tag" x="24" y="232">켈프의 개인 공간을 위한 디자인 시스템</text>
+</svg>
+</div>
+</body>
+</html>

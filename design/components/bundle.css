@@ -1,0 +1,103 @@
+.k-header {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: var(--header-height);
+  padding: 0 var(--space-48);
+  background: var(--main-header);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  box-shadow: var(--main-shadow);
+}
+.k-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+  color: var(--main-logo);
+  text-decoration: none;
+}
+.k-disc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--main-logo);
+  color: var(--surface-page);
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 700;
+}
+.k-wordmark {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.k-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+.k-nav-item {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--nav-item-height);
+  padding: 0 26px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--main-logo);
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+.k-nav-item.is-active {
+  background: var(--main-logo);
+  color: var(--surface-page);
+}
+.k-nav-item:focus-visible,
+.k-brand:focus-visible {
+  outline: 3px solid var(--main-logo);
+  outline-offset: 4px;
+}
+.k-pixel {
+  display: block;
+  width: var(--pixel-icon-size);
+  height: var(--pixel-icon-size);
+  flex: none;
+}
+.k-footer {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: var(--footer-height);
+  padding: 0 var(--space-48);
+  background: var(--main-header);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  box-shadow: var(--footer-shadow);
+  color: var(--main-logo);
+  font-family: var(--font-display);
+}
+.k-footer-id { display: flex; flex-direction: column; gap: 4px; }
+.k-footer-title { font-size: 24px; font-weight: 700; }
+.k-footer-note { font-size: 18px; }
+.k-footer-domain { font-size: 20px; font-weight: 700; }
+.k-card {
+  box-sizing: border-box;
+  width: var(--card-width);
+  height: var(--card-height);
+  background: var(--card-surface);
+  border: var(--border-width) solid var(--card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+}
