@@ -29,6 +29,8 @@ yarn-error.log*
 
 # env files
 .env*
+# 값이 없는 견본 파일만 저장소에 올린다 (실제 비밀값이 든 .env 는 계속 제외)
+!.env.example
 
 # vercel
 .vercel

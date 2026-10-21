@@ -1,0 +1,30 @@
+# 이미지에 넣지 않는 것 (빌드가 빨라지고, 비밀값이나 불필요한 파일이 들어가지 않는다)
+node_modules
+.next
+out
+build
+.git
+.gitignore
+.claude
+.vscode
+.idea
+
+# 환경 변수 파일은 이미지에 넣지 않고 실행할 때 넘긴다
+.env
+.env.*
+
+# 참고 자료와 문서, 테스트 (실행에는 필요 없다)
+design
+docs
+scripts
+**/*.test.ts
+README.md
+LICENSE
+
+# 기타
+Dockerfile
+docker-compose.yml
+.dockerignore
+npm-debug.log*
+*.tsbuildinfo
+.DS_Store

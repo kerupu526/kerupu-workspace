@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Docker 이미지에 필요한 파일만 모아서 작게 만든다 (.next/standalone/server.js 로 실행).
+  output: "standalone",
+
   // dev 서버가 AGENTS.md를 자동 생성하지 않게 한다 (이번 단계 범위 밖).
   agentRules: false,
   // localhost 가 아닌 주소(Tailscale)로 개발 서버에 접속할 때, 막히지 않고 스크립트가 불러와지게 한다.

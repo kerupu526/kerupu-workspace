@@ -1,0 +1,27 @@
+# 운영 서버에서 `docker compose up -d --build` 로 올린다. 사용법은 docs/deploy.md 참고.
+services:
+  web:
+    build:
+      context: .
+      # 공개 값만 빌드 때 넘긴다. compose 는 같은 폴더의 .env 를 읽어서 ${...} 를 채운다. 없으면 빈 값이다.
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+    image: kerupu-workspace:latest
+    container_name: kerupu
+    restart: unless-stopped
+    ports:
+      # 서버 안에서만 열고 싶으면 "127.0.0.1:3000:3000" 으로 바꾼다 (앞에 리버스 프록시를 둘 때)
+      - "3000:3000"
+    # 서버의 .env 파일(비밀값, 저장소에는 없다)을 컨테이너 환경 변수로 넘긴다. 파일이 없어도 시작은 된다.
+    # 견본은 .env.example. 서버에서 .env 를 만든 뒤에는 `chmod 600 .env` 로 다른 사용자가 못 읽게 한다.
+    env_file:
+      - path: .env
+        required: false
+    # 컨테이너가 쓸 곳은 없으므로 파일 시스템을 읽기 전용으로 둔다 (Next 가 임시로 쓰는 곳만 열어 준다)
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+    security_opt:
+      - no-new-privileges:true
