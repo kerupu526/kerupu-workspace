@@ -90,8 +90,8 @@
 
 /* 링크 아이콘: 서비스 로고 SVG */
 .icon {
-  width: calc(28 * var(--px));
-  height: calc(28 * var(--px));
+  width: calc(52 * var(--px));
+  height: calc(52 * var(--px));
   flex: none;
   object-fit: contain;
 }
