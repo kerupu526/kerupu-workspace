@@ -29,12 +29,16 @@ function isActive(pathname: string, bases: string[]): boolean {
   return bases.some((base) => pathname === base || pathname.startsWith(`${base}/`));
 }
 
-export default function HeaderNav() {
+export default function HeaderNav({ signedIn = false }: { signedIn?: boolean }) {
   const pathname = usePathname();
+  // 로그인한 뒤에는 "로그인" 자리가 "내 계정"이 되고, 같은 주소(/login)로 간다
+  const items = signedIn
+    ? NAV_ITEMS.map((item) => (item.href === "/login" ? { ...item, label: "내 계정" } : item))
+    : NAV_ITEMS;
 
   return (
     <nav className={styles.nav} aria-label="주 메뉴">
-      {NAV_ITEMS.map((item) => {
+      {items.map((item) => {
         const active = isActive(pathname, item.activeBases);
         return (
           <Link
