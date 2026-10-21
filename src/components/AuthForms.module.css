@@ -36,3 +36,36 @@
   width: 100%;
   margin-top: auto;
 }
+
+/* 로그인한 뒤의 계정 카드: 가운데에 하나만, 내용 높이만큼 */
+.single {
+  display: flex;
+  justify-content: center;
+}
+
+.account {
+  --card-h: auto;
+  width: var(--card-width);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: var(--space-48);
+}
+
+.accountName {
+  margin: 0;
+  font-size: var(--text-heading-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.accountEmail {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-caption-size);
+}
+
+.logout {
+  margin-top: var(--space-24);
+  width: 100%;
+}

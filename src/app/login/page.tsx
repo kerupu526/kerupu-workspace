@@ -31,17 +31,15 @@ export default async function LoginPage({
         </p>
       ) : null}
       {user ? (
-        <div className={styles.forms}>
-          <Card as="section" className={styles.card} aria-labelledby="account-title">
+        <div className={styles.single}>
+          <Card as="section" className={styles.account} aria-labelledby="account-title">
             <h2 className={styles.title} id="account-title">
               내 계정
             </h2>
-            <p>
-              <strong>{nickname ?? "사용자"}</strong>님, 로그인되어 있어요.
-            </p>
-            <p>{user.email}</p>
-            <form action={signOut} className={styles.form}>
-              <Button type="submit" variant="secondary" className={styles.submit}>
+            <p className={styles.accountName}>{nickname ?? "사용자"}님, 로그인되어 있어요.</p>
+            <p className={styles.accountEmail}>{user.email}</p>
+            <form action={signOut}>
+              <Button type="submit" variant="secondary" className={styles.logout}>
                 로그아웃
               </Button>
             </form>
