@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Button, ButtonLink } from "./Button";
 import Card from "./Card";
@@ -27,7 +28,9 @@ export type WikiBlock =
   | { type: "quote"; children: WikiBlock[] }
   | { type: "hr" }
   | { type: "table"; align: ("left" | "center" | "right" | null)[]; head: WikiInline[][]; rows: WikiInline[][][] }
-  | { type: "image"; src: string; alt: string };
+  | { type: "image"; src: string; alt: string }
+  /** CSS 블록: 허용 목록을 통과한 선언만 담긴다 (파서에서 걸러진다). 이름은 camelCase. */
+  | { type: "style"; style: Record<string, string>; children: WikiBlock[] };
 
 export interface WikiListItem {
   content: WikiInline[];
@@ -185,6 +188,13 @@ function Blocks({ blocks, footnotes }: { blocks: WikiBlock[]; footnotes: string[
                     ))}
                   </tbody>
                 </table>
+              </div>
+            );
+          case "style":
+            // 스타일은 style 속성으로만 준다 (<style> 태그나 HTML 주입은 쓰지 않는다)
+            return (
+              <div key={i} style={block.style as CSSProperties}>
+                <Blocks blocks={block.children} footnotes={footnotes} />
               </div>
             );
           case "image":
