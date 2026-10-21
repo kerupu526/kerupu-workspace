@@ -84,6 +84,47 @@ server {
 }
 ```
 
+## 도메인 연결 (kerupu.tech)
+
+집 서버는 Cloudflare 터널(cloudflared)로 바깥과 이어져 있다. 요청이 오는 길은 이렇다.
+
+```
+브라우저 → Cloudflare → cloudflared 터널 → 서버의 Nginx(80번) → 컨테이너(Tailscale 주소 3100번)
+```
+
+- 터널은 토큰 방식이라 "kerupu.tech 을 어디로 보낼지"는 서버 파일이 아니라 **Cloudflare 대시보드**(Zero Trust > Networks > Tunnels > 이 터널 > Public Hostname)에 있다. 서비스는 `HTTP`, `localhost:80`으로 둔다.
+- Nginx의 `default_server`가 "공사 중" 페이지를 내놓고 있었고, `deploy/nginx/kerupu.tech.conf`가 `Host: kerupu.tech` 요청만 우리 컨테이너로 넘긴다. 다른 요청은 기존 그대로다.
+- 설정 파일의 `upstream` 주소(`100.74.143.1:3100`)는 서버 `.env`의 `BIND_ADDRESS`, `HOST_PORT`와 같아야 한다.
+
+설치 (서버에서, `sudo` 필요):
+
+```bash
+cd ~/Projects/kerupu-workspace && git pull
+sudo cp deploy/nginx/kerupu.tech.conf /etc/nginx/sites-available/kerupu.tech
+sudo ln -s /etc/nginx/sites-available/kerupu.tech /etc/nginx/sites-enabled/kerupu.tech
+sudo nginx -t                      # 문법 검사. "successful" 이 나와야 다음으로 간다
+sudo systemctl reload nginx        # 끊김 없이 새 설정 적용 (restart 아님)
+```
+
+확인:
+
+```bash
+curl -s -H "Host: kerupu.tech" http://127.0.0.1/ | grep -o "<title>[^<]*"   # 서버 안에서
+curl -sI https://kerupu.tech/                                                # 어디서든
+```
+
+되돌리기 (이전처럼 "공사 중" 페이지로):
+
+```bash
+sudo rm /etc/nginx/sites-enabled/kerupu.tech && sudo nginx -t && sudo systemctl reload nginx
+```
+
+알아 둘 것:
+
+- `www.kerupu.tech`는 지금 Cloudflare에 연결되어 있지 않아 404가 난다. 쓰려면 대시보드에 Public Hostname을 추가하고 설정 파일의 `server_name`에 넣는다 (또는 `www`를 `kerupu.tech`로 보내는 리다이렉트를 둔다).
+- 컨테이너를 내리면 `kerupu.tech`는 502가 난다. 점검 때는 위의 "되돌리기"로 공사 중 페이지로 바꿔 두면 깔끔하다.
+- 방문자의 실제 주소는 `CF-Connecting-IP` 헤더에 있다 (Nginx가 보는 접속 주소는 터널이다). 이 헤더는 Cloudflare를 거치지 않은 직접 접속에서는 조작할 수 있으므로, 속도 제한 같은 곳에 쓸 때는 Nginx가 Cloudflare 주소에서 온 요청만 믿도록 `real_ip` 설정을 추가한다.
+
 ## 환경 변수와 비밀값 (Supabase)
 
 값 없는 견본이 `.env.example`에 있다. **실제 값은 서버의 `.env` 파일에만 둔다.**
