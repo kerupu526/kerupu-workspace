@@ -25,6 +25,9 @@
 /* 와이어프레임 실측값: 이미지 원 지름 160px */
 .image {
   --circle-size: calc(160 * var(--px));
+  /* 캐릭터 이미지는 테두리 없이 흰 바탕으로만 구분한다 */
+  --circle-border: 0px;
+  --circle-fill: var(--surface-page);
   margin-bottom: calc(4 * var(--px));
 }
 

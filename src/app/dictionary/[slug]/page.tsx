@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import PageFrame from "@/components/PageFrame";
-import ServiceTabs from "@/components/ServiceTabs";
 import WikiDocument, { type WikiSection } from "@/components/WikiDocument";
 import styles from "./page.module.css";
 
@@ -26,6 +25,11 @@ const SECTIONS: WikiSection[] = [
   },
 ];
 
+/*
+ * 캐릭터 문서 화면. 문서가 화면의 중심이 되도록 서비스 탭(게시판·플레이리스트·캐릭터 사전)은 두지 않고,
+ * 어디에 속하는 문서인지만 현재 위치로 보여 준다. 사전으로 돌아가는 길은 현재 위치의 첫 칸이다.
+ * (헤더의 "서비스" 메뉴는 그대로 켜져 있다.)
+ */
 export default async function DictionaryEntryPage({
   params,
 }: {
@@ -35,8 +39,12 @@ export default async function DictionaryEntryPage({
 
   return (
     <PageFrame className={styles.layout}>
-      <ServiceTabs current="dictionary" />
       <WikiDocument
+        breadcrumb={[
+          { label: "캐릭터 사전", href: "/dictionary" },
+          { label: "[작품]" },
+          { label: "[캐릭터 이름]" },
+        ]}
         href={`/dictionary/${encodeURIComponent(slug)}`}
         title="[캐릭터 이름]"
         modified="[날짜]"
@@ -52,7 +60,7 @@ export default async function DictionaryEntryPage({
           ],
         }}
         sections={SECTIONS}
-        footnotes={["[각주 내용]", "[각주 내용]"]}
+        footnotes={["[각주 내용: 문서에 쓰인 근거나 보충 설명이 들어갑니다]", "[각주 내용]"]}
       />
     </PageFrame>
   );

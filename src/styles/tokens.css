@@ -38,9 +38,14 @@
   --footer-shadow: 0 calc(-3 * var(--px)) calc(7.6 * var(--px)) calc(4 * var(--px)) #b3bd9840;
 
   /* 모서리 */
-  --radius-card: calc(40 * var(--px));
-  --radius-pill: calc(40 * var(--px));
-  --radius-field: calc(32 * var(--px));
+  /*
+   * 요청으로 디자인 원본(design/tokens.json: 카드 40, 알약 40, 입력 영역 32)보다 줄였다.
+   * 사이트 전체의 모서리가 이 세 값으로 정해지니, 더 줄이거나 되돌리려면 여기만 고치면 된다.
+   * (동그란 사진 틀과 재생 버튼은 50% 원이라 영향이 없다.)
+   */
+  --radius-card: calc(20 * var(--px));
+  --radius-pill: calc(20 * var(--px));
+  --radius-field: calc(16 * var(--px));
 
   /* 간격 */
   --space-8: calc(8 * var(--px));

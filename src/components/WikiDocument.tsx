@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { Button, ButtonLink } from "./Button";
 import Card from "./Card";
 import Chip from "./Chip";
+import FootnoteRef from "./FootnoteRef";
 import WikiInfobox, { type WikiInfoboxData } from "./WikiInfobox";
 import WikiToc, { type TocItem } from "./WikiToc";
 import styles from "./WikiDocument.module.css";
@@ -14,7 +16,15 @@ export interface WikiSection {
   children?: WikiSection[];
 }
 
+/** 현재 위치 한 칸. href 가 없으면 링크가 아닌 글자(마지막 칸이거나 갈 곳이 아직 없는 칸) */
+export interface Crumb {
+  label: string;
+  href?: string;
+}
+
 interface WikiDocumentProps {
+  /** 이 문서가 어디에 속하는지 보여 주는 현재 위치 (맨 앞이 가장 상위) */
+  breadcrumb: Crumb[];
   /** "문서" 메뉴가 가리키는, 지금 이 문서의 주소 */
   href: string;
   title: string;
@@ -58,19 +68,13 @@ function toTocItems(items: Numbered[]): TocItem[] {
   }));
 }
 
-function Inline({ part }: { part: WikiInline }) {
+function Inline({ part, footnotes }: { part: WikiInline; footnotes: string[] }) {
   if (typeof part === "string") return <>{part}</>;
   const n = part.footnote;
-  return (
-    <sup className={styles.fnRef}>
-      <a id={`fnref-${n}`} href={`#fn-${n}`} aria-label={`각주 ${n}번으로 이동`}>
-        [{n}]
-      </a>
-    </sup>
-  );
+  return <FootnoteRef n={n} text={footnotes[n - 1] ?? ""} />;
 }
 
-function Sections({ items }: { items: Numbered[] }) {
+function Sections({ items, footnotes }: { items: Numbered[]; footnotes: string[] }) {
   return items.map((item) => {
     const Heading = `h${item.headingLevel}` as "h2" | "h3" | "h4" | "h5" | "h6";
     return (
@@ -82,11 +86,11 @@ function Sections({ items }: { items: Numbered[] }) {
         {item.section.paragraphs.map((paragraph, i) => (
           <p key={i} className={styles.paragraph}>
             {paragraph.map((part, j) => (
-              <Inline key={j} part={part} />
+              <Inline key={j} part={part} footnotes={footnotes} />
             ))}
           </p>
         ))}
-        <Sections items={item.children} />
+        <Sections items={item.children} footnotes={footnotes} />
       </section>
     );
   });
@@ -98,6 +102,7 @@ function Sections({ items }: { items: Numbered[] }) {
  * 내용은 모두 자리표시이고, 편집·역사 같은 위키 기능은 아직 없다.
  */
 export default function WikiDocument({
+  breadcrumb,
   href,
   title,
   modified,
@@ -111,6 +116,29 @@ export default function WikiDocument({
   return (
     <article className={styles.doc}>
       <header className={styles.header}>
+        <nav aria-label="현재 위치">
+          <ol className={styles.crumbs}>
+            {breadcrumb.map((crumb, i) => {
+              const last = i === breadcrumb.length - 1;
+              return (
+                <li key={crumb.label} className={styles.crumb}>
+                  {crumb.href && !last ? (
+                    <Link className={styles.crumbLink} href={crumb.href}>
+                      {crumb.label}
+                    </Link>
+                  ) : (
+                    <span aria-current={last ? "page" : undefined}>{crumb.label}</span>
+                  )}
+                  {last ? null : (
+                    <span className={styles.crumbSep} aria-hidden="true">
+                      ›
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
         <div className={styles.titleRow}>
           <h1 className={styles.title}>{title}</h1>
           <nav className={styles.menu} aria-label="문서 메뉴">
@@ -144,7 +172,7 @@ export default function WikiDocument({
       <Card className={styles.body}>
         <WikiInfobox {...infobox} />
         <WikiToc items={toTocItems(numbered)} />
-        <Sections items={numbered} />
+        <Sections items={numbered} footnotes={footnotes} />
 
         {footnotes.length > 0 ? (
           <section className={styles.footnotes} aria-labelledby="fn-title">

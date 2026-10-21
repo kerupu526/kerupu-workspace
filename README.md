@@ -9,7 +9,9 @@
 현재 단계: **프론트엔드 작업** (화면은 모두 만들었다). 와이어프레임의 9개 화면과 글쓰기·게시글 보기 모달을
 자리표시 내용으로 구현했다. 백엔드·인증·실제 기능(폼 제출, 검색, 필터, 재생, 위키 편집 등)은 아직 없다.
 캐릭터 문서(`/dictionary/[slug]`)는 와이어프레임과 다르게 the seed 계열 위키(나무위키 등)의 화면 구성
-(문서 메뉴, 수정 시각, 분류, 목차, 번호 붙은 문단, 정보 상자, 각주)을 따른다. 위키 편집·역사 화면은 아직 정의되지 않았다.
+(현재 위치, 문서 메뉴, 수정 시각, 분류, 목차, 번호 붙은 문단, 정보 상자, 각주)을 따르고, 문서가 중심이 되도록
+서비스 탭은 두지 않는다. 본문 속 각주 번호는 누르거나 올리면 내용이 팝오버로 뜬다 (`FootnoteRef`).
+위키 편집·역사 화면은 아직 정의되지 않았다.
 
 화면 크기: 1920px 와이어프레임을 `--design-width`(기본 2400px)에서 1:1로 그리고, 그보다 좁은 화면에서는
 `--px` 단위로 전체를 비율 축소한다 (`src/styles/tokens.css`). 모바일 설계 전까지 쓰는 임시 방식이다.
@@ -50,7 +52,8 @@ src/
                    ServiceTabs, ProfileCard, AuthForms,          화면별 부품
                    PostCard, NoticeCard, TrackRow, PlayerCard,
                    CharacterCard, ToggleChip
-                   WikiDocument, WikiToc, WikiInfobox            위키 문서
+                   WikiDocument, WikiToc, WikiInfobox,           위키 문서
+                   FootnoteRef
                    (모두 CSS Modules)
   styles/
     tokens.css       디자인 토큰 (CSS 변수)
