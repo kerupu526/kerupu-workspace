@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
     ok = !error;
   }
 
-  const target = new URL(ok ? next : "/login?error=confirm", origin);
+  // 이동 주소도 고정 설정(SITE_URL)을 기준으로 한다 (요청 주소가 0.0.0.0 같은 접속용 주소일 수 있다)
+  const base = process.env.SITE_URL ?? origin;
+  const target = new URL(ok ? next : "/login?error=confirm", base);
   return NextResponse.redirect(target);
 }
