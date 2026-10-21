@@ -4,9 +4,28 @@
  * 연속된 같은 문자는 rect 하나로 합친다.
  */
 
-export type PixelIconName = "about" | "service" | "note" | "login";
+export type PixelIconName = "about" | "service" | "note" | "login" | "user";
 
 const GRIDS: Record<PixelIconName, readonly string[]> = {
+  // 사람 모양: 머리(사각형) 한 개와 어깨
+  user: [
+    "................",
+    "................",
+    ".....######.....",
+    "....#++++++#....",
+    "....#++++++#....",
+    "....#++++++#....",
+    ".....######.....",
+    "................",
+    "................",
+    "...##########...",
+    "..#++++++++++#..",
+    "..#++++++++++#..",
+    "..#++++++++++#..",
+    "..############..",
+    "................",
+    "................",
+  ],
   about: [
     "................",
     "................",
@@ -112,6 +131,7 @@ const RUNS: Record<PixelIconName, Run[]> = {
   service: toRuns(GRIDS.service),
   note: toRuns(GRIDS.note),
   login: toRuns(GRIDS.login),
+  user: toRuns(GRIDS.user),
 };
 
 interface PixelIconProps {
