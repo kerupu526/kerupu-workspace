@@ -1,0 +1,29 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 와이어프레임 실측값: 필터 알약 높이 약 52px (토큰에 없음, 확인 필요) */
+  height: calc(52 * var(--px));
+  padding: 0 var(--space-24);
+  background: var(--surface-page);
+  /* 버튼 테두리는 의미를 담으므로 card-border 가 아니라 main-logo 3px */
+  border: var(--border-width) solid var(--ui-border);
+  border-radius: var(--radius-pill);
+  color: var(--main-logo);
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--ease-out);
+}
+
+.on {
+  background: var(--main-logo);
+  color: var(--surface-page);
+}
+
+@media (hover: hover) {
+  .chip:not(.on):hover {
+    background: var(--card-surface);
+  }
+}

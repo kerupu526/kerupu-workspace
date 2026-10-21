@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { ComponentPropsWithoutRef } from "react";
 import styles from "./Button.module.css";
 
-type Variant = "primary" | "secondary";
+/** dashed: 점선 테두리. 운영자 전용이거나 아직 준비 중인 기능에 쓴다. */
+type Variant = "primary" | "secondary" | "dashed";
 /** compact: 입력창(field-height)과 같은 높이. 검색창 옆처럼 나란히 놓을 때 쓴다. */
 type Size = "default" | "large" | "compact";
 

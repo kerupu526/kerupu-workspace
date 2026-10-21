@@ -1,0 +1,85 @@
+.card {
+  --card-w: 100%;
+  /* 와이어프레임 실측값: 캐릭터 카드 높이 약 395px (토큰에 없음, 확인 필요) */
+  --card-h: calc(395 * var(--px));
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-12) var(--space-24) var(--space-16);
+  text-align: center;
+  transition:
+    transform var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out);
+}
+
+/* 눌러서 열 수 있는 카드라서 마우스를 올리면 살짝 떠오른다 (터치 기기는 제외) */
+@media (hover: hover) {
+  .card:hover {
+    transform: translateY(var(--lift));
+    box-shadow: 0 calc(8 * var(--px)) calc(10 * var(--px)) calc(2 * var(--px)) #e9eddf;
+  }
+}
+
+/* 와이어프레임 실측값: 이미지 원 지름 160px */
+.image {
+  --circle-size: calc(160 * var(--px));
+  margin-bottom: calc(4 * var(--px));
+}
+
+.name,
+.work,
+.summary,
+.more {
+  margin: 0;
+}
+
+.name {
+  font-size: var(--text-heading-size);
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-card);
+}
+
+.card:hover .link {
+  text-decoration: underline;
+}
+
+/* 포커스 링은 글자가 아니라 카드 전체에 그린다 */
+.link:focus-visible {
+  outline: none;
+}
+
+.link:focus-visible::after {
+  outline: 3px solid var(--main-logo);
+  outline-offset: 4px;
+}
+
+.work {
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-regular);
+}
+
+.summary {
+  font-size: var(--text-caption-size);
+  font-weight: var(--font-weight-regular);
+}
+
+/* 카드 맨 아래 */
+.more {
+  margin-top: auto;
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-regular);
+}

@@ -3,8 +3,8 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: calc(300 * var(--px));
-  height: calc(300 * var(--px));
+  width: var(--circle-size, calc(300 * var(--px)));
+  height: var(--circle-size, calc(300 * var(--px)));
   border: var(--border-width) solid var(--ui-border);
   border-radius: 50%;
   font-size: var(--text-label-size);

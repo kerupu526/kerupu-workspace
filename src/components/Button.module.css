@@ -19,15 +19,20 @@
 
 /* 마우스를 올리면 살짝 떠오르고(터치 기기는 제외), 누르면 살짝 눌린다 */
 @media (hover: hover) {
-  .button:hover {
+  .button:hover:not(:disabled) {
     transform: translateY(var(--lift));
     box-shadow: 0 calc(4 * var(--px)) calc(8 * var(--px)) #b3bd9866;
   }
 }
 
-.button:active {
+.button:active:not(:disabled) {
   transform: translateY(var(--press));
   box-shadow: none;
+}
+
+/* 아직 쓸 수 없는 버튼: 흐리게(opacity) 하지 않고 모양(점선)으로만 알린다 */
+.button:disabled {
+  cursor: default;
 }
 
 /* 와이어프레임 실측값: 첫 화면 큰 버튼 높이 80px (토큰에 없음, 확인 필요) */
@@ -51,6 +56,13 @@
  */
 .secondary {
   background: var(--card-surface);
+  color: var(--main-logo);
+}
+
+/* 운영자 전용이거나 아직 준비 중인 기능: 점선 테두리 (칩의 dashed 와 같은 뜻) */
+.dashed {
+  background: transparent;
+  border-style: dashed;
   color: var(--main-logo);
 }
 

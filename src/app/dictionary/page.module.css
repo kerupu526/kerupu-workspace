@@ -1,0 +1,61 @@
+.layout {
+  display: grid;
+  grid-template-columns: var(--card-width) minmax(0, 1fr);
+  column-gap: var(--space-48);
+  row-gap: var(--space-24);
+  align-items: start;
+}
+
+.tabs {
+  grid-column: 1 / -1;
+}
+
+/* 왼쪽 찾아보기 카드: 높이는 내용만큼 */
+.filters {
+  --card-h: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-32);
+  padding: var(--space-48);
+}
+
+.filterTitle {
+  margin: 0;
+  font-size: var(--text-heading-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.search {
+  --search-width: 100%;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.groupLabel {
+  margin: 0;
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+
+.results {
+  min-width: 0;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-24);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

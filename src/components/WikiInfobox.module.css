@@ -1,0 +1,61 @@
+/* 오른쪽에 띄우고 글이 둘레로 흐르게 한다 */
+.box {
+  float: right;
+  /* 와이어프레임 실측값 기준: 정보 상자 폭 약 400px (토큰에 없음, 확인 필요) */
+  width: calc(400 * var(--px));
+  margin: 0 0 var(--space-24) var(--space-32);
+  overflow: hidden;
+  background: var(--surface-page);
+  border: var(--border-width) solid var(--card-border);
+  border-radius: var(--radius-field);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.caption {
+  display: table-caption;
+  padding: var(--space-12) var(--space-16);
+  background: var(--main-header);
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.imageCell {
+  padding: var(--space-16);
+}
+
+/* 이미지 자리: 정사각형, 테두리는 의미를 담으므로 main-logo 3px */
+.image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border: var(--border-width) solid var(--ui-border);
+  border-radius: var(--radius-field);
+  font-size: var(--text-label-size);
+}
+
+.label,
+.value {
+  padding: var(--space-8) var(--space-16);
+  border-top: var(--border-width) solid var(--card-border);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.label {
+  width: 30%;
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.value {
+  font-size: var(--text-caption-size);
+  font-weight: var(--font-weight-regular);
+}

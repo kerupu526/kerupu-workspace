@@ -1,0 +1,154 @@
+.doc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+/* ---------- 머리: 제목, 문서 메뉴, 수정 시각, 분류 ---------- */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-title-size);
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.menu {
+  display: flex;
+  gap: var(--space-12);
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--text-caption-size);
+  font-weight: var(--font-weight-regular);
+}
+
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.categoryLabel {
+  margin: 0;
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.categoryList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 흰 바탕 위에서 이름표가 묻히지 않도록 연한 바탕을 깐다 (글자는 main-logo 그대로) */
+.categoryList li > span {
+  background: var(--card-surface);
+}
+
+/* ---------- 본문 ---------- */
+
+/* display: flow-root 로 떠 있는 정보 상자까지 카드 안에 담는다 */
+.body {
+  --card-w: 100%;
+  --card-h: auto;
+  display: flow-root;
+  padding: var(--space-48);
+}
+
+.section {
+  margin: 0;
+}
+
+.heading {
+  margin: var(--space-32) 0 var(--space-16);
+  /* 제목 아래 선은 장식(card-border)이고, 구분은 글자 크기와 번호가 맡는다 */
+  padding-bottom: var(--space-8);
+  border-bottom: var(--border-width) solid var(--card-border);
+  font-size: var(--text-heading-size);
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+/* 아래 단계 제목은 한 단계씩 작게 */
+.level3 {
+  font-size: var(--text-body-size);
+}
+
+.level4,
+.level5,
+.level6 {
+  font-size: var(--text-label-size);
+  border-bottom: 0;
+}
+
+.number {
+  margin-right: var(--space-12);
+}
+
+.paragraph {
+  margin: 0 0 var(--space-16);
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-regular);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 각주 ---------- */
+
+.fnRef {
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.fnRef a,
+.fnBack {
+  color: inherit;
+  text-decoration: none;
+}
+
+.fnRef a:hover,
+.fnBack:hover {
+  text-decoration: underline;
+}
+
+.footnotes {
+  clear: both;
+}
+
+.fnList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fnItem {
+  display: flex;
+  gap: var(--space-12);
+  margin-bottom: var(--space-8);
+  font-size: var(--text-caption-size);
+  font-weight: var(--font-weight-regular);
+}
+
+.fnBack {
+  flex: none;
+  font-weight: var(--font-weight-bold);
+}
