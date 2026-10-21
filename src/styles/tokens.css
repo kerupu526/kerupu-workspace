@@ -59,7 +59,7 @@
   --header-height: calc(104 * var(--px));
   --footer-height: calc(88 * var(--px));
   --nav-item-height: calc(56 * var(--px));
-  --pixel-icon-size: calc(32 * var(--px));
+  --pixel-icon-size: calc(48 * var(--px));
   --field-height: calc(56 * var(--px));
   --card-width: calc(450 * var(--px));
   --card-height: calc(700 * var(--px));
