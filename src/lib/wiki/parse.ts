@@ -4,13 +4,14 @@ import remarkGfm from "remark-gfm";
 import type { WikiBlock, WikiInline, WikiListItem, WikiSection } from "@/components/WikiDocument";
 import { sanitizeStyle, toReactStyle } from "./css.ts";
 import { extractMeta, stripComments, type WikiMeta } from "./meta.ts";
+import { extractFootnotes, restoreFootnoteText, splitFootnoteMarks, type RawFootnote } from "./footnote.ts";
 
 /*
  * 위키 마크다운 파서 (6단계: 문단, 리스트, 인용문, 수평줄, 인라인 서식, 링크, 각주, 표, 이미지, CSS 블록,
  * 메타 블록, 목차, 주석).
  * 설계는 docs/wiki-syntax.md 참고.
  *
- * 처리 순서: 주석 지우기 → 메타 블록 떼어 내기 → CSS 블록 떼어 내기 → 마크다운 파싱 → 블록 변환
+ * 처리 순서: 주석 지우기 → 메타 블록 → 각주 → CSS 블록 떼어 내기 → 마크다운 파싱 → 블록 변환
  *
  * 규칙
  *   - ## 부터 문단 제목. ##이 1단계, ###이 2단계 ... ######이 5단계.
@@ -33,7 +34,9 @@ import { extractMeta, stripComments, type WikiMeta } from "./meta.ts";
  *       - 문서에서 처음 나온 하나만 쓰고, 나머지는 버리며 warnings 에 남긴다 (목차 id 가 겹치지 않게).
  *       - 첫 제목 전에 쓴 [toc] 는 lead 에 담긴다 (첫 제목 전의 글은 버리지만 목차 자리는 남긴다).
  *       - 인용문, 리스트, CSS 블록 안의 [toc] 는 목차가 아니라 글자로 남는다. \[toc] 도 글자다.
- *   - 각주 내용이 굵게 같은 서식을 가로지르면 각주로 인식하지 못한다 (알려진 한계).
+ *   - 각주 ^[내용]: 파싱 전에 원문에서 떼어 낸다 (footnote.ts 머리말 참고). 안쪽의 [ ] 는 짝이 맞으면 내용이고,
+ *     짝이 안 맞는 괄호는 [ ] 로 쓴다. 번호는 문서에 실제로 나온 순서대로 매긴다.
+ *     제목, 링크 주소, 이미지 설명 안의 각주 표시는 각주가 되지 않고 원문 글자로 되돌린다.
  */
 
 type MdNode = {
@@ -75,7 +78,10 @@ interface StyleBlockSource {
 
 /* 파싱 중에 함께 끌고 다니는 것들 */
 interface Ctx {
+  /** 문서에 실제로 나온 각주의 내용 (1번부터 순서대로) */
   footnotes: string[];
+  /** 원문에서 떼어 낸 각주 전부 (표시의 번호가 이 목록의 위치다) */
+  notes: RawFootnote[];
   warnings: string[];
   styled: StyleBlockSource[];
 }
@@ -91,45 +97,38 @@ export function isSafeHref(href: string): boolean {
   return href.startsWith("/") || href.startsWith("#") || /^https:\/\//.test(href);
 }
 
-/* 문장 안의 ^[내용] 을 찾아 각주로 바꾼다 */
-function splitFootnotes(text: string, footnotes: string[]): WikiInline[] {
-  const out: WikiInline[] = [];
-  const pattern = /\^\[([^\]]*)\]/g;
-  let last = 0;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(text)) !== null) {
-    if (match.index > last) out.push(text.slice(last, match.index));
-    footnotes.push(match[1]);
-    out.push({ footnote: footnotes.length });
-    last = match.index + match[0].length;
-  }
-  if (last < text.length) out.push(text.slice(last));
-  return out;
+/* 글 속의 각주 표시를 각주로 바꾼다. 번호는 표시를 만난 순서대로 새로 매긴다. */
+function splitFootnotes(text: string, ctx: Ctx): WikiInline[] {
+  return splitFootnoteMarks(text).map((piece) => {
+    if (typeof piece === "string") return piece;
+    ctx.footnotes.push(ctx.notes[piece.note]?.content ?? "");
+    return { footnote: ctx.footnotes.length };
+  });
 }
 
 /* 마크다운 조각들을 위키 인라인 조각으로 바꾼다 */
-function toInline(nodes: MdNode[] = [], footnotes: string[]): WikiInline[] {
+function toInline(nodes: MdNode[] = [], ctx: Ctx): WikiInline[] {
   const out: WikiInline[] = [];
   for (const node of nodes) {
     switch (node.type) {
       case "text":
-        out.push(...splitFootnotes(node.value ?? "", footnotes));
+        out.push(...splitFootnotes(node.value ?? "", ctx));
         break;
       case "strong":
-        out.push({ strong: toInline(node.children, footnotes) });
+        out.push({ strong: toInline(node.children, ctx) });
         break;
       case "emphasis":
-        out.push({ em: toInline(node.children, footnotes) });
+        out.push({ em: toInline(node.children, ctx) });
         break;
       case "delete":
-        out.push({ del: toInline(node.children, footnotes) });
+        out.push({ del: toInline(node.children, ctx) });
         break;
       case "inlineCode":
         out.push({ code: node.value ?? "" });
         break;
       case "link": {
-        const children = toInline(node.children, footnotes);
-        const href = node.url ?? "";
+        const children = toInline(node.children, ctx);
+        const href = restoreFootnoteText(node.url ?? "", ctx.notes);
         if (isSafeHref(href)) out.push({ link: { href, children } });
         else out.push(...children);
         break;
@@ -139,11 +138,11 @@ function toInline(nodes: MdNode[] = [], footnotes: string[]): WikiInline[] {
         break;
       case "image":
         // 문장 안의 이미지는 그림 대신 설명 글자로 남긴다 (그림은 문단 하나에 단독으로 쓴다)
-        if (node.alt) out.push(node.alt);
+        if (node.alt) out.push(restoreFootnoteText(node.alt, ctx.notes));
         break;
       default:
-        if (node.children) out.push(...toInline(node.children, footnotes));
-        else if (node.value) out.push(node.value);
+        if (node.children) out.push(...toInline(node.children, ctx));
+        else if (node.value) out.push(...splitFootnotes(node.value, ctx));
     }
   }
   return out;
@@ -153,18 +152,18 @@ function toInline(nodes: MdNode[] = [], footnotes: string[]): WikiInline[] {
 function toListItem(node: MdNode, ctx: Ctx): WikiListItem {
   const kids = node.children ?? [];
   const first = kids[0];
-  const content = first && first.type === "paragraph" ? toInline(first.children, ctx.footnotes) : [];
+  const content = first && first.type === "paragraph" ? toInline(first.children, ctx) : [];
   const rest = first && first.type === "paragraph" ? kids.slice(1) : kids;
   const nested = toBlocks(rest, ctx);
   return nested.length > 0 ? { content, nested } : { content };
 }
 
 /* 표: 열 12개, 행 300개를 넘으면 표 전체를 버린다 */
-function toTable(node: MdNode, footnotes: string[]): WikiBlock | null {
+function toTable(node: MdNode, ctx: Ctx): WikiBlock | null {
   const rows = node.children ?? [];
   const cols = Math.max(0, ...rows.map((r) => (r.children ?? []).length));
   if (cols === 0 || cols > TABLE_MAX_COLS || rows.length > TABLE_MAX_ROWS) return null;
-  const cells = rows.map((r) => (r.children ?? []).map((c) => toInline(c.children, footnotes)));
+  const cells = rows.map((r) => (r.children ?? []).map((c) => toInline(c.children, ctx)));
   const align = Array.from({ length: cols }, (_, i) => {
     const a = node.align?.[i];
     return a === "left" || a === "center" || a === "right" ? a : null;
@@ -190,15 +189,16 @@ function toBlocks(nodes: MdNode[], ctx: Ctx): WikiBlock[] {
         }
 
         // 문단이 이미지 하나뿐이면 그림 블록으로 바꾼다
-        if (only && only.type === "image" && only.url && isSafeImageSrc(only.url)) {
-          out.push({ type: "image", src: only.url, alt: only.alt || fileName(only.url) });
+        const imageSrc = only?.type === "image" && only.url ? restoreFootnoteText(only.url, ctx.notes) : "";
+        if (only && imageSrc && isSafeImageSrc(imageSrc)) {
+          out.push({ type: "image", src: imageSrc, alt: restoreFootnoteText(only.alt ?? "", ctx.notes) || fileName(imageSrc) });
           break;
         }
-        out.push({ type: "p", children: toInline(node.children, ctx.footnotes) });
+        out.push({ type: "p", children: toInline(node.children, ctx) });
         break;
       }
       case "table": {
-        const table = toTable(node, ctx.footnotes);
+        const table = toTable(node, ctx);
         if (table) out.push(table);
         break;
       }
@@ -235,7 +235,7 @@ function toStyleBlock(source: StyleBlockSource | undefined, ctx: Ctx): WikiBlock
   const inner = processor.parse(source.content) as MdNode;
   for (const node of inner.children ?? []) {
     if (node.type === "heading") {
-      ctx.warnings.push(`CSS 블록 안에서는 제목을 쓸 수 없어 버렸습니다: "${plainText(node.children)}"`);
+      ctx.warnings.push(`CSS 블록 안에서는 제목을 쓸 수 없어 버렸습니다: "${plainText(node.children, ctx.notes)}"`);
     } else if (BLOCK_TYPES.has(node.type)) {
       children.push(...toBlocks([node], ctx));
     }
@@ -314,10 +314,11 @@ function fileName(src: string): string {
 }
 
 /* 제목 글자(평문) */
-function plainText(nodes: MdNode[] = []): string {
-  return nodes
-    .map((n) => (n.value !== undefined ? n.value : plainText(n.children)))
-    .join("");
+function plainText(nodes: MdNode[] = [], notes: RawFootnote[]): string {
+  return restoreFootnoteText(
+    nodes.map((n) => (n.value !== undefined ? n.value : plainText(n.children, notes))).join(""),
+    notes,
+  );
 }
 
 const BLOCK_TYPES = new Set(["paragraph", "list", "blockquote", "thematicBreak", "table"]);
@@ -325,10 +326,16 @@ const BLOCK_TYPES = new Set(["paragraph", "list", "blockquote", "thematicBreak",
 export function parseWiki(markdown: string): ParsedWiki {
   const uncommented = stripComments(markdown);
   const withoutMeta = extractMeta(uncommented, isSafeImageSrc);
-  const { text, blocks } = extractStyleBlocks(withoutMeta.text);
+  const withNotes = extractFootnotes(withoutMeta.text);
+  const { text, blocks } = extractStyleBlocks(withNotes.text);
   const tree = processor.parse(text) as MdNode;
   const footnotes: string[] = [];
-  const ctx: Ctx = { footnotes, warnings: [...withoutMeta.warnings], styled: blocks };
+  const ctx: Ctx = {
+    footnotes,
+    notes: withNotes.notes,
+    warnings: [...withoutMeta.warnings, ...withNotes.warnings],
+    styled: blocks,
+  };
   const root: WikiSection[] = [];
   const lead: WikiBlock[] = [];
   let tocSeen = false;
@@ -351,7 +358,7 @@ export function parseWiki(markdown: string): ParsedWiki {
       if (node.depth < 2) continue; // # 은 문서 제목 자리
       // ## 다음에 바로 #### 처럼 단계를 건너뛰면 가장 가까운 윗단계 아래에 둔다
       const level = Math.min(node.depth - 2, stack.length); // ## -> 0
-      const section: WikiSection = { title: plainText(node.children), blocks: [] };
+      const section: WikiSection = { title: plainText(node.children, ctx.notes), blocks: [] };
       stack.length = Math.min(stack.length, level);
       if (level === 0) root.push(section);
       else {
