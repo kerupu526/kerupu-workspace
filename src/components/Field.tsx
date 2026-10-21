@@ -4,7 +4,7 @@ interface FieldProps {
   id: string;
   label: string;
   /** 한 줄 입력(기본) 또는 여러 줄 입력 */
-  type?: "text" | "password" | "search" | "textarea";
+  type?: "text" | "email" | "password" | "search" | "textarea";
   autoComplete?: string;
   placeholder?: string;
   /** 글자를 화면에서 숨기고 보조기기에만 읽히게 한다 (검색창처럼 모양이 이미 뜻을 말해 줄 때) */
