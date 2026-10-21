@@ -2,32 +2,36 @@ import type { Metadata } from "next";
 import Card from "@/components/Card";
 import PageFrame from "@/components/PageFrame";
 import ProfileCard from "@/components/ProfileCard";
+import { ABOUT_INTRO, ABOUT_LINKS } from "@/content/about";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = { title: "소개" };
 
-/* 내용은 자리표시(대괄호)다. 실제 문구는 콘텐츠 단계에서 채운다. */
-const LINKS = ["[링크 이름]", "[링크 이름]", "[링크 이름]", "[링크 이름]"];
-
 export default function AboutPage() {
   return (
     <PageFrame className={styles.layout}>
-      <ProfileCard name="켈프 (kerupu526)">[짧은 설명]</ProfileCard>
+      <ProfileCard name="켈프 (kerupu526)" image="/images/profile.jpg">
+        [짧은 설명]
+      </ProfileCard>
       <div className={styles.content}>
         <h1 className={styles.heading}>소개</h1>
         <Card className={styles.intro}>
-          <p className={styles.text}>[소개 문단]</p>
+          {ABOUT_INTRO.ko.map((line) => (
+            <p className={styles.text} key={line}>
+              {line}
+            </p>
+          ))}
         </Card>
 
         <h2 className={styles.heading}>연락 · 링크</h2>
-        {/* 링크 내용이 정해지면 이름이 서로 다른 <a> 로 바꾼다. 지금은 링크가 아니다. */}
+        {/* 주소가 정해지면 각 항목을 링크(a)로 바꾼다. 지금은 글자만 보여 준다. */}
         <ul className={styles.links}>
-          {LINKS.map((name, i) => (
-            <Card as="li" key={i} className={styles.link}>
+          {ABOUT_LINKS.map((link) => (
+            <Card as="li" key={link.name} className={styles.link}>
               <span className={styles.mark} aria-hidden="true" />
               <div className={styles.linkText}>
-                <p className={styles.linkName}>{name}</p>
-                <p className={styles.linkNote}>[링크 설명]</p>
+                <p className={styles.linkName}>{link.name}</p>
+                <p className={styles.linkNote}>{link.note}</p>
               </div>
             </Card>
           ))}
