@@ -9,19 +9,31 @@ export const metadata: Metadata = { title: "캐릭터 문서" };
 const SECTIONS: WikiSection[] = [
   {
     title: "개요",
-    paragraphs: [["[개요 본문]", { footnote: 1 }, " [이어지는 문장]"]],
+    blocks: [{ type: "p", children: ["[개요 본문]", { footnote: 1 }, " [이어지는 문장]"] }],
   },
   {
     title: "설정",
-    paragraphs: [["[설정 본문]"]],
+    blocks: [
+      { type: "p", children: ["[설정 본문]"] },
+      {
+        type: "list",
+        ordered: false,
+        items: [
+          { content: ["[항목 1]"] },
+          { content: ["[항목 2]"], nested: [{ type: "list", ordered: true, items: [{ content: ["[하위 1]"] }] }] },
+        ],
+      },
+      { type: "quote", children: [{ type: "p", children: ["[인용 내용]"] }] },
+      { type: "hr" },
+    ],
     children: [
-      { title: "외모", paragraphs: [["[외모 설명]", { footnote: 2 }]] },
-      { title: "성격", paragraphs: [["[성격 설명]"]] },
+      { title: "외모", blocks: [{ type: "p", children: ["[외모 설명]", { footnote: 2 }] }] },
+      { title: "성격", blocks: [{ type: "p", children: ["[성격 설명]"] }] },
     ],
   },
   {
     title: "관계",
-    paragraphs: [["[관계 설명]"]],
+    blocks: [{ type: "p", children: ["[관계 설명]"] }],
   },
 ];
 

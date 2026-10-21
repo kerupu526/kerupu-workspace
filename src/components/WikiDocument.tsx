@@ -20,9 +20,22 @@ export type WikiInline =
   | { code: string }
   | { link: { href: string; children: WikiInline[] } };
 
+/* 블록: 문단, 리스트, 인용문, 수평줄 */
+export type WikiBlock =
+  | { type: "p"; children: WikiInline[] }
+  | { type: "list"; ordered: boolean; items: WikiListItem[] }
+  | { type: "quote"; children: WikiBlock[] }
+  | { type: "hr" };
+
+export interface WikiListItem {
+  content: WikiInline[];
+  /** 항목 아래의 중첩 블록 (하위 리스트 등) */
+  nested?: WikiBlock[];
+}
+
 export interface WikiSection {
   title: string;
-  paragraphs: WikiInline[][];
+  blocks: WikiBlock[];
   children?: WikiSection[];
 }
 
@@ -104,6 +117,48 @@ function Inline({ part, footnotes }: { part: WikiInline; footnotes: string[] }) 
   );
 }
 
+function Blocks({ blocks, footnotes }: { blocks: WikiBlock[]; footnotes: string[] }) {
+  return (
+    <>
+      {blocks.map((block, i) => {
+        switch (block.type) {
+          case "p":
+            return (
+              <p key={i} className={styles.paragraph}>
+                {block.children.map((part, j) => (
+                  <Inline key={j} part={part} footnotes={footnotes} />
+                ))}
+              </p>
+            );
+          case "list": {
+            const List = block.ordered ? "ol" : "ul";
+            return (
+              <List key={i} className={styles.list}>
+                {block.items.map((item, j) => (
+                  <li key={j}>
+                    {item.content.map((part, k) => (
+                      <Inline key={k} part={part} footnotes={footnotes} />
+                    ))}
+                    {item.nested ? <Blocks blocks={item.nested} footnotes={footnotes} /> : null}
+                  </li>
+                ))}
+              </List>
+            );
+          }
+          case "quote":
+            return (
+              <blockquote key={i} className={styles.quote}>
+                <Blocks blocks={block.children} footnotes={footnotes} />
+              </blockquote>
+            );
+          case "hr":
+            return <hr key={i} className={styles.hr} />;
+        }
+      })}
+    </>
+  );
+}
+
 function Sections({ items, footnotes }: { items: Numbered[]; footnotes: string[] }) {
   return items.map((item) => {
     const Heading = `h${item.headingLevel}` as "h2" | "h3" | "h4" | "h5" | "h6";
@@ -113,13 +168,7 @@ function Sections({ items, footnotes }: { items: Numbered[]; footnotes: string[]
           <span className={styles.number}>{item.number}</span>
           {item.section.title}
         </Heading>
-        {item.section.paragraphs.map((paragraph, i) => (
-          <p key={i} className={styles.paragraph}>
-            {paragraph.map((part, j) => (
-              <Inline key={j} part={part} footnotes={footnotes} />
-            ))}
-          </p>
-        ))}
+        <Blocks blocks={item.section.blocks} footnotes={footnotes} />
         <Sections items={item.children} footnotes={footnotes} />
       </section>
     );
