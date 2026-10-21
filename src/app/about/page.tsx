@@ -28,7 +28,8 @@ export default function AboutPage() {
         <ul className={styles.links}>
           {ABOUT_LINKS.map((link) => (
             <Card as="li" key={link.name} className={styles.link}>
-              <span className={styles.mark} aria-hidden="true" />
+              {/* 서비스 로고 (worldvectorlogo.com). 글자가 옆에 있으므로 그림은 장식이다. */}
+              <img src={link.icon} alt="" className={styles.icon} />
               <div className={styles.linkText}>
                 <p className={styles.linkName}>
                   <a href={link.href} target="_blank" rel="noopener noreferrer" className={styles.linkAnchor}>
