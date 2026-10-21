@@ -1,24 +1,24 @@
 .layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--card-width);
-  column-gap: var(--space-48);
-  align-items: stretch;
-}
-
-.list {
   display: flex;
   flex-direction: column;
   gap: var(--space-24);
-  min-width: 0;
 }
 
 .head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+}
+
+.heading {
   display: flex;
   align-items: center;
   gap: var(--space-24);
 }
 
-.heading {
+.title {
   margin: 0;
   font-size: var(--text-heading-size);
   font-weight: var(--font-weight-bold);
@@ -32,9 +32,4 @@
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.panel {
-  /* 와이어프레임 실측값: 내용 입력 영역 높이 약 486px */
-  --textarea-min: calc(486 * var(--px));
 }

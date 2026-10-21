@@ -1,0 +1,105 @@
+/*
+ * 브라우저 기본 모양(테두리, 여백, 바탕)을 걷어 내고 안쪽 카드가 모양을 맡는다.
+ *
+ * 움직임: 열릴 때는 아래에서 살짝 떠오르며 나타나고(260ms), 닫힐 때는 더 짧게 사라진다(160ms).
+ * <dialog> 는 닫히는 순간 display 가 none 이 되고 최상위 층에서 빠지므로,
+ * display 와 overlay 도 allow-discrete 로 전환 목록에 넣어 사라지는 동안 남아 있게 한다.
+ * (Chrome 117+, Safari 17.4+, Firefox 129+. 지원하지 않는 브라우저는 움직임 없이 바로 열고 닫힌다.)
+ */
+.dialog {
+  /* 모달 폭은 와이어프레임에 없는 새 값이다 (확인 필요) */
+  width: calc(640 * var(--px));
+  max-width: 100%;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  color: var(--main-logo);
+
+  /* 닫힌 상태이자 사라지는 모습 */
+  opacity: 0;
+  transform: translateY(var(--rise-modal)) scale(var(--scale-modal));
+  transition:
+    opacity var(--motion-exit) var(--ease-in),
+    transform var(--motion-exit) var(--ease-in),
+    overlay var(--motion-exit) allow-discrete,
+    display var(--motion-exit) allow-discrete;
+}
+
+/* 열린 상태 */
+.dialog[open] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--motion-enter) var(--ease-out),
+    transform var(--motion-enter) var(--ease-out),
+    overlay var(--motion-enter) allow-discrete,
+    display var(--motion-enter) allow-discrete;
+}
+
+/* 열리기 직전의 시작 모습 (@starting-style 은 열린 상태 규칙 뒤에 둔다) */
+@starting-style {
+  .dialog[open] {
+    opacity: 0;
+    transform: translateY(var(--rise-modal)) scale(var(--scale-modal));
+  }
+}
+
+/* 배경 막: main-logo 를 45% 로 깐다 (::backdrop 은 변수를 못 읽는 브라우저가 있어 값을 직접 적는다) */
+.dialog::backdrop {
+  background: #64726000;
+  transition:
+    background-color var(--motion-exit) var(--ease-in),
+    overlay var(--motion-exit) allow-discrete,
+    display var(--motion-exit) allow-discrete;
+}
+
+.dialog[open]::backdrop {
+  background: #64726073;
+  transition:
+    background-color var(--motion-enter) var(--ease-out),
+    overlay var(--motion-enter) allow-discrete,
+    display var(--motion-enter) allow-discrete;
+}
+
+@starting-style {
+  .dialog[open]::backdrop {
+    background: #64726000;
+  }
+}
+
+/* 긴 내용은 카드 안에서 스크롤한다. 안쪽에서 min-height: 0 + overflow: auto 인 영역이 줄어든다. */
+.card {
+  --card-w: 100%;
+  --card-h: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  max-height: calc(100vh - 2 * var(--space-48));
+  padding: var(--space-48);
+}
+
+.head {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+}
+
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-heading-size);
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}

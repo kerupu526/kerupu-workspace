@@ -12,11 +12,32 @@
   white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
+  transition:
+    transform var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out);
+}
+
+/* 마우스를 올리면 살짝 떠오르고(터치 기기는 제외), 누르면 살짝 눌린다 */
+@media (hover: hover) {
+  .button:hover {
+    transform: translateY(var(--lift));
+    box-shadow: 0 calc(4 * var(--px)) calc(8 * var(--px)) #b3bd9866;
+  }
+}
+
+.button:active {
+  transform: translateY(var(--press));
+  box-shadow: none;
 }
 
 /* 와이어프레임 실측값: 첫 화면 큰 버튼 높이 80px (토큰에 없음, 확인 필요) */
 .large {
   height: calc(80 * var(--px));
+}
+
+.compact {
+  height: var(--field-height);
+  padding: 0 var(--space-32);
 }
 
 .primary {

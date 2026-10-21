@@ -1,29 +1,38 @@
 import Card from "./Card";
 import styles from "./PostCard.module.css";
 
-interface PostCardProps {
-  no: number;
+export interface Post {
+  id: number;
   title: string;
-  preview: string;
   author: string;
   date: string;
+  body: string;
+}
+
+interface PostCardProps {
+  post: Post;
+  onOpen: () => void;
 }
 
 /*
- * 게시글 목록의 한 줄. 내용은 자리표시다.
- * 글 보기 기능이 생기면 제목을 서로 다른 이름의 링크로 바꾼다.
+ * 게시글 목록의 한 줄. 제목 버튼을 누르면 전체 내용 모달이 열린다.
+ * 버튼은 제목 글자 하나뿐이고(그래서 이름이 제목이 된다), ::after 로 카드 전체를 눌리게 넓힌다.
  */
-export default function PostCard({ no, title, preview, author, date }: PostCardProps) {
+export default function PostCard({ post, onOpen }: PostCardProps) {
+  const preview = post.body.split("\n")[0];
+
   return (
     <Card as="li" className={styles.card}>
-      <span className={styles.no}>{no}</span>
+      <span className={styles.no}>{post.id}</span>
       <div className={styles.body}>
-        <p className={styles.title}>{title}</p>
+        <button type="button" className={styles.open} aria-haspopup="dialog" onClick={onOpen}>
+          {post.title}
+        </button>
         <p className={styles.preview}>{preview}</p>
       </div>
       <p className={styles.meta}>
-        <span>{author}</span>
-        <span>{date}</span>
+        <span>{post.author}</span>
+        <span>{post.date}</span>
       </p>
     </Card>
   );

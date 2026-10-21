@@ -1,0 +1,25 @@
+.content {
+  /* 모달 안 내용 입력 영역 최소 높이 (와이어프레임에 없는 새 값, 확인 필요) */
+  --textarea-min: calc(320 * var(--px));
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+/* 주의 문구: 색이 아니라 "안내" 글자로 알려 주고, 글자는 main-logo 그대로 쓴다 */
+.notice {
+  margin: 0;
+  font-size: var(--text-caption-size);
+  font-weight: var(--font-weight-regular);
+}
+
+.notice strong {
+  font-weight: var(--font-weight-bold);
+}
+
+.submit {
+  width: 100%;
+}

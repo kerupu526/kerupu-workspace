@@ -56,6 +56,14 @@
   font-weight: var(--font-weight-bold);
   white-space: nowrap;
   text-decoration: none;
+  transition: background-color var(--motion-fast) var(--ease-out);
+}
+
+/* 마우스를 올리면 현재 페이지가 아닌 메뉴에 연한 바탕이 깔린다 (main-logo 글자 대비 4.5:1 이상) */
+@media (hover: hover) {
+  .navItem:not(.active):hover {
+    background: var(--card-surface);
+  }
 }
 
 .active {

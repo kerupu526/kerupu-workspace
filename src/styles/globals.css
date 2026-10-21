@@ -1,5 +1,6 @@
 @import "./tokens.css";
 @import "./fonts.css";
+@import "./fonts-subset.css";
 
 *,
 *::before,
@@ -11,6 +12,26 @@ html,
 body {
   margin: 0;
   padding: 0;
+}
+
+/*
+ * 글꼴이 준비되기 전에는 본문을 숨기고, 준비되면 부드럽게 나타낸다.
+ * layout.tsx 의 스크립트가 <html> 에 fonts-loading 을 붙였다가(글꼴 준비 또는 2초 후) 뗀다.
+ * 숨기는 동안에는 등장 애니메이션도 멈춰 뒀다가, 나타날 때 같이 시작한다.
+ * 스크립트가 안 도는 환경에서는 클래스가 붙지 않으므로 그대로 보인다.
+ */
+body {
+  transition: opacity var(--motion-reveal) var(--ease-out);
+}
+
+.fonts-loading body {
+  opacity: 0;
+}
+
+.fonts-loading *,
+.fonts-loading *::before,
+.fonts-loading *::after {
+  animation-play-state: paused !important;
 }
 
 /* 푸터를 페이지 맨 아래에 붙이기 위한 세로 배치 */

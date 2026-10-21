@@ -82,6 +82,17 @@
   border-radius: 50%;
   color: var(--main-logo);
   cursor: pointer;
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .control:hover {
+    transform: scale(var(--scale-hover));
+  }
+}
+
+.control:active {
+  transform: scale(var(--scale-press));
 }
 
 .control svg {

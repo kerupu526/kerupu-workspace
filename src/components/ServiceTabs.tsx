@@ -2,7 +2,7 @@ import { ButtonLink } from "./Button";
 import styles from "./ServiceTabs.module.css";
 
 const TABS = [
-  { key: "board", href: "/board", label: "게시판" },
+  { key: "board", href: "/board", label: "자유게시판" },
   { key: "playlist", href: "/playlist", label: "플레이리스트" },
   { key: "dictionary", href: "/dictionary", label: "캐릭터 사전" },
 ] as const;

@@ -9,6 +9,8 @@ interface FieldProps {
   placeholder?: string;
   /** 글자를 화면에서 숨기고 보조기기에만 읽히게 한다 (검색창처럼 모양이 이미 뜻을 말해 줄 때) */
   hideLabel?: boolean;
+  /** 모달이 열릴 때 처음 포커스를 받는다 */
+  autoFocus?: boolean;
 }
 
 /* 라벨과 입력창 한 쌍. 입력창 테두리는 card-border 가 아니라 main-logo 3px. */
@@ -19,6 +21,7 @@ export default function Field({
   autoComplete,
   placeholder,
   hideLabel = false,
+  autoFocus,
 }: FieldProps) {
   const multiline = type === "textarea";
   return (
@@ -27,7 +30,13 @@ export default function Field({
         {label}
       </label>
       {multiline ? (
-        <textarea className={styles.textarea} id={id} name={id} placeholder={placeholder} />
+        <textarea
+          className={styles.textarea}
+          id={id}
+          name={id}
+          placeholder={placeholder}
+          autoFocus={autoFocus}
+        />
       ) : (
         <input
           className={styles.input}
@@ -36,6 +45,7 @@ export default function Field({
           type={type}
           autoComplete={autoComplete}
           placeholder={placeholder}
+          autoFocus={autoFocus}
         />
       )}
     </div>

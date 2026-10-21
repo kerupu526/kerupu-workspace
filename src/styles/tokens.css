@@ -61,8 +61,34 @@
   /* 사양이 3px 로 정했으므로 줄이지 않는다 */
   --border-width: 3px;
 
+  /*
+   * 움직임: 조용한 분위기에 맞게 작고 부드럽게. 길이는 150~400ms.
+   * 시스템에서 "모션 줄이기"를 켠 사용자에게는 아래 맨 끝 규칙이 위치·크기 변화를 0 으로 만들어
+   * 위아래로 움직이거나 커지는 효과는 빼고, 부드럽게 나타나고 사라지는 페이드만 남긴다.
+   */
+  --motion-fast: 150ms;
+  --motion-enter: 260ms;
+  --motion-exit: 160ms;
+  --motion-page: 400ms;
+  /* 글꼴이 준비된 뒤 본문이 나타나는 페이드: 빠르게 로딩될 때도 은은하게 보이도록 조금 길게 */
+  --motion-reveal: 600ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  /* 모달이 떠오르는 거리와 시작 크기 */
+  --rise-modal: calc(12 * var(--px));
+  --scale-modal: 0.98;
+  /* 페이지가 떠오르는 거리 */
+  --rise-page: calc(10 * var(--px));
+  /* 마우스를 올렸을 때 위로 뜨는 거리(음수가 위쪽)와 눌렀을 때 내려가는 거리 */
+  --lift: calc(-2 * var(--px));
+  --press: calc(1 * var(--px));
+  /* 동그란 버튼이 커지는 정도와 눌렸을 때 작아지는 정도 */
+  --scale-hover: 1.06;
+  --scale-press: 0.95;
+
   /* 글꼴 */
-  --font-display: "Mona12", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  /* "Mona12 Fallback" 은 fonts.css 에서 시스템 글꼴 폭·높이를 Mona12 에 맞춰 만든 임시 글꼴 */
+  --font-display: "Mona12", "Mona12 Fallback", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   /* 글자 크기·굵기 (줄 간격은 아직 정하지 않았다) */
   --font-weight-regular: 400;
@@ -73,4 +99,17 @@
   --text-label-size: calc(22 * var(--px));
   --text-caption-size: calc(18 * var(--px));
   --text-logo-size: calc(40 * var(--px));
+}
+
+/* 모션 줄이기: 위치와 크기가 변하는 움직임은 없애고 페이드만 남긴다 */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --rise-modal: 0px;
+    --scale-modal: 1;
+    --rise-page: 0px;
+    --lift: 0px;
+    --press: 0px;
+    --scale-hover: 1;
+    --scale-press: 1;
+  }
 }

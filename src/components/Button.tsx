@@ -3,7 +3,8 @@ import type { ComponentPropsWithoutRef } from "react";
 import styles from "./Button.module.css";
 
 type Variant = "primary" | "secondary";
-type Size = "default" | "large";
+/** compact: 입력창(field-height)과 같은 높이. 검색창 옆처럼 나란히 놓을 때 쓴다. */
+type Size = "default" | "large" | "compact";
 
 interface StyleProps {
   variant?: Variant;
@@ -11,7 +12,7 @@ interface StyleProps {
 }
 
 function buttonClass({ variant = "primary", size = "default" }: StyleProps, extra?: string) {
-  return [styles.button, styles[variant], size === "large" ? styles.large : "", extra ?? ""]
+  return [styles.button, styles[variant], size === "default" ? "" : styles[size], extra ?? ""]
     .filter(Boolean)
     .join(" ");
 }

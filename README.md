@@ -27,8 +27,9 @@ npm start       # 빌드 결과 실행
 
 ```
 design/            디자인 참고 자료 (수정하지 않는다)
+scripts/           build-font-subset.mjs (작은 글꼴 만들기)
 public/
-  fonts/           Mona12.woff2, Mona12-Bold.woff2
+  fonts/           kerupu-pixel-*.woff2 (작은 수정본), Mona12*.woff2 (원본), README.md
   licenses/        글꼴 라이선스 문서 (글꼴 옆에 함께 둔다)
 src/
   app/             라우트
@@ -43,7 +44,8 @@ src/
     not-found.tsx    404
   components/      Header, HeaderNav, Footer, PixelIcon          공통 틀
                    Card, Button, Chip, CircleFrame, PageFrame    기본 부품
-                   Field, NoopForm, SearchField, WritePanel      폼 (제출 동작 없음)
+                   Field, NoopForm, SearchField                  폼 (제출 동작 없음)
+                   Modal, WriteDialog, PostList                  모달 (<dialog> 사용)
                    ServiceTabs, ProfileCard, AuthForms,          화면별 부품
                    PostCard, NoticeCard, TrackRow, PlayerCard
                    (모두 CSS Modules)
@@ -53,8 +55,32 @@ src/
     globals.css      전역 스타일
 ```
 
+## 글꼴 불러오기
+
+Mona12 원본이 각각 약 1.2MB 라서 첫 방문에서 시스템 글꼴로 먼저 보였다가 바뀌며 깨져 보이는 문제를 줄이는 장치들이다.
+
+- **작은 글꼴(가장 큰 효과):** 자주 쓰는 글자(영문, 숫자, 기호, 한글 2,350자, 자모)만 담은 수정본
+  `kerupu-pixel-*.woff2` 가 각 약 43KB 이다. 이모지, 가나, 한자 등은 원본이 맡고 그런 글자가 나올 때만 내려받는다.
+  파일은 `scripts/build-font-subset.mjs` 로 만들고, `src/styles/fonts-subset.css` 는 자동 생성 파일이다.
+  라이선스 처리와 수정 내용은 `public/fonts/README.md` 에 있다.
+- **미리 받기:** `layout.tsx` 가 작은 글꼴 두 개를 `preload` 한다 (Next.js 는 자동으로 해 주지 않는다).
+- **준비된 뒤에 나타내기:** `layout.tsx` 의 작은 스크립트가 `<html>` 에 `fonts-loading` 을 붙여 본문을 숨겼다가,
+  작은 글꼴이 준비되면(최대 2초) 떼고 부드럽게(0.6초) 나타낸다. 스크립트가 안 도는 환경에서는 그대로 보인다.
+- **폴백 맞추기:** `fonts.css` 의 `Mona12 Fallback` 이 시스템 글꼴(맑은 고딕, Consolas 등)의 폭과 줄 높이를
+  Mona12 에 맞춘다. Windows 에서 쟀을 때 대부분 ±3% 이내이다. 다른 환경은 한글만 비슷하게 맞춰진다.
+- **캐시:** `next.config.ts` 가 `/fonts/*` 를 1년 캐시(`immutable`)한다. 글꼴 파일을 바꿀 때는 파일 이름도 바꿔야 한다.
+- **알려진 한계:** KS X 1001 에 없는 희귀 한글 음절은 작은 글꼴에도 원본 담당 범위에도 없어서 시스템 글꼴로 보인다.
+
+작은 글꼴을 다시 만들려면 (도구는 프로젝트 의존성에 넣지 않는다):
+
+```bash
+npm install --no-save subset-font wawoff2
+node scripts/build-font-subset.mjs
+```
+
 ## 글꼴 라이선스
 
 Mona12는 SIL Open Font License 1.1 (Reserved Font Name "Mona")이다.
-글꼴 파일을 단독으로 판매하지 않고, 서브셋·수정 없이 그대로 쓴다.
+원본 파일은 수정하지 않고 그대로 두며, 글꼴 파일을 단독으로 판매하지 않는다.
+글자를 일부만 남긴 작은 글꼴은 수정본이라서 이름을 "Kerupu Pixel" 로 바꿨다 (`public/fonts/README.md`).
 라이선스 문서는 `public/licenses/`에 있다.

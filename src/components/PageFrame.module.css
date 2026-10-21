@@ -1,4 +1,16 @@
+/*
+ * 페이지가 바뀔 때 본문이 아래에서 살짝 떠오르며 나타난다.
+ * 끝 모습(to)을 적지 않고 backwards 로 채워서, 끝난 뒤에는 transform 이 남지 않는다.
+ */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--rise-page));
+  }
+}
+
 .frame {
+  animation: rise-in var(--motion-page) var(--ease-out) backwards;
   width: 100%;
   max-width: calc(1920 * var(--px));
   /* margin-block: auto 로 헤더와 푸터 사이 세로 가운데에 놓는다 */
