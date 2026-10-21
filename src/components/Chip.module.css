@@ -1,0 +1,30 @@
+.chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  /* 와이어프레임 실측값: 칩 높이 약 44px (토큰에 없음, 확인 필요) */
+  height: calc(44 * var(--px));
+  padding: 0 var(--space-24);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+.plain {
+  background: var(--surface-page);
+  color: var(--main-logo);
+}
+
+.solid {
+  background: var(--main-logo);
+  color: var(--surface-page);
+}
+
+/* 좁은 칸(글쓰기 제목 옆)에 들어가도록 좌우 여백을 줄인다 */
+.dashed {
+  padding: 0 var(--space-16);
+  border: var(--border-width) dashed var(--ui-border);
+  color: var(--main-logo);
+}

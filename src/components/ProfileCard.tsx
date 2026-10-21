@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Card from "./Card";
+import CircleFrame from "./CircleFrame";
 import styles from "./ProfileCard.module.css";
 
 interface ProfileCardProps {
@@ -15,7 +16,7 @@ interface ProfileCardProps {
 export default function ProfileCard({ name, children }: ProfileCardProps) {
   return (
     <Card className={styles.profile}>
-      <div className={styles.photo}>프로필 사진</div>
+      <CircleFrame label="프로필 사진" />
       <p className={styles.name}>{name}</p>
       {children ? <p className={styles.description}>{children}</p> : null}
     </Card>

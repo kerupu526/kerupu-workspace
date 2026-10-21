@@ -26,35 +26,6 @@
   gap: var(--space-24);
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-}
-
-.label {
-  font-size: var(--text-label-size);
-  font-weight: var(--font-weight-bold);
-}
-
-/* 입력창 테두리는 card-border 가 아니라 main-logo 3px */
-.input {
-  width: 100%;
-  height: var(--field-height);
-  padding: 0 var(--space-24);
-  background: var(--surface-page);
-  border: var(--border-width) solid var(--ui-border);
-  border-radius: var(--radius-pill);
-  color: var(--main-logo);
-  font-size: var(--text-body-size);
-  font-weight: var(--font-weight-regular);
-}
-
-.input:focus-visible {
-  outline: 3px solid var(--main-logo);
-  outline-offset: 4px;
-}
-
 .message {
   margin: 0;
   font-size: var(--text-caption-size);

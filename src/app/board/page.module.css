@@ -1,0 +1,37 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--card-width);
+  column-gap: var(--space-48);
+  row-gap: var(--space-24);
+  align-items: stretch;
+}
+
+.tabs {
+  grid-column: 1 / -1;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  /* 와이어프레임 실측값: 줄 사이 약 20px (토큰에 없음, 확인 필요) */
+  gap: calc(20 * var(--px));
+  min-width: 0;
+}
+
+.search {
+  align-self: flex-end;
+}
+
+.posts {
+  display: flex;
+  flex-direction: column;
+  gap: calc(20 * var(--px));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panel {
+  /* 와이어프레임 실측값: 내용 입력 영역 높이 약 402px */
+  --textarea-min: calc(402 * var(--px));
+}

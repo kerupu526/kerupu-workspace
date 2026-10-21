@@ -1,0 +1,43 @@
+import styles from "./Field.module.css";
+
+interface FieldProps {
+  id: string;
+  label: string;
+  /** 한 줄 입력(기본) 또는 여러 줄 입력 */
+  type?: "text" | "password" | "search" | "textarea";
+  autoComplete?: string;
+  placeholder?: string;
+  /** 글자를 화면에서 숨기고 보조기기에만 읽히게 한다 (검색창처럼 모양이 이미 뜻을 말해 줄 때) */
+  hideLabel?: boolean;
+}
+
+/* 라벨과 입력창 한 쌍. 입력창 테두리는 card-border 가 아니라 main-logo 3px. */
+export default function Field({
+  id,
+  label,
+  type = "text",
+  autoComplete,
+  placeholder,
+  hideLabel = false,
+}: FieldProps) {
+  const multiline = type === "textarea";
+  return (
+    <div className={multiline ? `${styles.field} ${styles.grow}` : styles.field}>
+      <label className={hideLabel ? "visually-hidden" : styles.label} htmlFor={id}>
+        {label}
+      </label>
+      {multiline ? (
+        <textarea className={styles.textarea} id={id} name={id} placeholder={placeholder} />
+      ) : (
+        <input
+          className={styles.input}
+          id={id}
+          name={id}
+          type={type}
+          autoComplete={autoComplete}
+          placeholder={placeholder}
+        />
+      )}
+    </div>
+  );
+}

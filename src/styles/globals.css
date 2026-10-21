@@ -36,9 +36,19 @@ main {
 
 /* 입력창과 버튼은 글꼴과 색을 물려받지 않으므로 직접 물려받게 한다 */
 input,
+textarea,
 button {
   font: inherit;
   color: inherit;
+}
+
+/* 포커스 링: main-logo 3px, 간격 4px. 어느 배경에서도 3:1 이상이다. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--main-logo);
+  outline-offset: 4px;
 }
 
 /* 화면에는 보이지 않지만 보조기기에는 읽히는 글자 */

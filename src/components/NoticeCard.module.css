@@ -1,0 +1,39 @@
+.card {
+  --card-w: 100%;
+  /* 와이어프레임 실측값: 공지 한 줄 높이 약 150px (토큰에 없음, 확인 필요) */
+  --card-h: calc(150 * var(--px));
+  display: flex;
+  align-items: center;
+  gap: var(--space-32);
+  padding: 0 var(--space-48);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.title,
+.preview,
+.date {
+  margin: 0;
+}
+
+.title {
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.preview {
+  font-size: var(--text-caption-size);
+  font-weight: var(--font-weight-regular);
+}
+
+.date {
+  flex: none;
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-regular);
+}

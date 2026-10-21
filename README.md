@@ -6,8 +6,12 @@
 - 스타일: CSS 변수 + CSS Modules (UI 라이브러리, Tailwind 없음)
 - 패키지 매니저: npm
 
-현재 단계: **프론트엔드 작업**. `/`, `/about`, `/login` 세 화면은 자리표시 내용으로 화면을 만들었다.
-나머지 라우트는 `h1`만 있는 뼈대이고, 백엔드·인증·실제 기능은 아직 없다.
+현재 단계: **프론트엔드 작업**. `/`, `/about`, `/login`, `/board`, `/my-board`, `/playlist` 여섯 화면은
+자리표시 내용으로 화면을 만들었다. `/dictionary`, `/dictionary/[slug]`, 404는 `h1`만 있는 뼈대이고,
+백엔드·인증·실제 기능(폼 제출, 검색, 재생 등)은 아직 없다.
+
+화면 크기: 1920px 와이어프레임을 `--design-width`(기본 2400px)에서 1:1로 그리고, 그보다 좁은 화면에서는
+`--px` 단위로 전체를 비율 축소한다 (`src/styles/tokens.css`). 모바일 설계 전까지 쓰는 임시 방식이다.
 
 ## 실행 방법
 
@@ -37,8 +41,12 @@ src/
     playlist/        /playlist
     dictionary/      /dictionary, /dictionary/[slug]
     not-found.tsx    404
-  components/      Header, HeaderNav, Footer, PixelIcon,
-                   Card, Button, ProfileCard, PageFrame, AuthForms (+ CSS Modules)
+  components/      Header, HeaderNav, Footer, PixelIcon          공통 틀
+                   Card, Button, Chip, CircleFrame, PageFrame    기본 부품
+                   Field, NoopForm, SearchField, WritePanel      폼 (제출 동작 없음)
+                   ServiceTabs, ProfileCard, AuthForms,          화면별 부품
+                   PostCard, NoticeCard, TrackRow, PlayerCard
+                   (모두 CSS Modules)
   styles/
     tokens.css       디자인 토큰 (CSS 변수)
     fonts.css        Mona12 @font-face

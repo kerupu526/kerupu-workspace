@@ -1,0 +1,48 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* 여러 줄 입력은 남는 높이를 차지한다 */
+.grow {
+  flex: 1;
+  min-height: 0;
+}
+
+.label {
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.input,
+.textarea {
+  width: 100%;
+  background: var(--surface-page);
+  border: var(--border-width) solid var(--ui-border);
+  color: var(--main-logo);
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-regular);
+}
+
+.input {
+  height: var(--field-height);
+  padding: 0 var(--space-24);
+  border-radius: var(--radius-pill);
+}
+
+.textarea {
+  flex: 1;
+  /* 와이어프레임 실측값: 입력 영역 최소 높이는 화면마다 다르다. 사용하는 쪽에서 --textarea-min 으로 정한다. */
+  min-height: var(--textarea-min, calc(200 * var(--px)));
+  padding: var(--space-16) var(--space-24);
+  border-radius: var(--radius-field);
+  resize: none;
+}
+
+/* 안내 글자도 흐리게 하지 않고 main-logo 그대로 쓴다 */
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--main-logo);
+  opacity: 1;
+}
