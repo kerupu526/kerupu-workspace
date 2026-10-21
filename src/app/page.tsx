@@ -7,7 +7,9 @@ export default function LandingPage() {
   return (
     <PageFrame className={styles.layout}>
       <ProfileCard name="ケルプ / 켈프" image="/images/profile.jpg">
-        다른 이름으로 𰻝䨻𪚥𣡽P라고도 부릅니다. (자칭)
+        다른 이름으로{" "}
+        <span style={{ fontFamily: '"SimSun-ExtB", "SimSun", "Malgun Gothic", sans-serif' }}>𰻝䨻𪚥𣡽P</span>
+        라고도 부릅니다. (자칭)
       </ProfileCard>
       <div className={styles.hero}>
         <p className={styles.eyebrow}>개인 웹사이트</p>

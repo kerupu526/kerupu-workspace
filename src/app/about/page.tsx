@@ -11,7 +11,7 @@ export default function AboutPage() {
   return (
     <PageFrame className={styles.layout}>
       <ProfileCard name="켈프 (kerupu526)" image="/images/profile.jpg">
-        [짧은 설명]
+        너는 정말 바보구나
       </ProfileCard>
       <div className={styles.content}>
         <h1 className={styles.heading}>소개</h1>
@@ -24,13 +24,17 @@ export default function AboutPage() {
         </Card>
 
         <h2 className={styles.heading}>연락 · 링크</h2>
-        {/* 주소가 정해지면 각 항목을 링크(a)로 바꾼다. 지금은 글자만 보여 준다. */}
+
         <ul className={styles.links}>
           {ABOUT_LINKS.map((link) => (
             <Card as="li" key={link.name} className={styles.link}>
               <span className={styles.mark} aria-hidden="true" />
               <div className={styles.linkText}>
-                <p className={styles.linkName}>{link.name}</p>
+                <p className={styles.linkName}>
+                  <a href={link.href} target="_blank" rel="noopener noreferrer" className={styles.linkAnchor}>
+                    {link.name}
+                  </a>
+                </p>
                 <p className={styles.linkNote}>{link.note}</p>
               </div>
             </Card>

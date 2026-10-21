@@ -21,10 +21,10 @@ export const ABOUT_INTRO = {
   ],
 } as const;
 
-/* 연락 · 링크. 주소(URL)는 정해지면 넣는다. 지금은 글자만 보여 준다. */
+/* 연락 · 링크 */
 export const ABOUT_LINKS = [
-  { name: "GitHub", note: "개인 GitHub예요!" },
-  { name: "X (Twitter) 본계정", note: "보카로P 활동 계정이에요!" },
-  { name: "X (Twitter) 부계정", note: "일상/리듬게임 활동 계정이에요!" },
-  { name: "YouTube", note: "제 유튜브 채널이에요! 보카로P 활동을 여기서 할 거예요 ✨" },
+  { name: "GitHub", note: "개인 GitHub예요!", href: "https://github.com/kerupu526" },
+  { name: "X (Twitter) 본계정", note: "보카로P 활동 계정이에요!", href: "https://x.com/kerupu_526" },
+  { name: "X (Twitter) 부계정", note: "일상/리듬게임 활동 계정이에요!", href: "https://x.com/roromango_065" },
+  { name: "YouTube", note: "제 유튜브 채널이에요! 보카로P 활동을 여기서 할 거예요 ✨", href: "https://www.youtube.com/@byanhoutetsuki" },
 ] as const;
