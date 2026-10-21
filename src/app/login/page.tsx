@@ -36,7 +36,7 @@ export default async function LoginPage({
             <h2 className={styles.title} id="account-title">
               내 계정
             </h2>
-            <p className={styles.accountName}>{nickname ?? "사용자"}님, 로그인되어 있어요.</p>
+            <p className={styles.accountName}>{nickname ?? "사용자"}님, 환영합니다.</p>
             <p className={styles.accountEmail}>{user.email}</p>
             <form action={signOut}>
               <Button type="submit" variant="secondary" className={styles.logout}>
