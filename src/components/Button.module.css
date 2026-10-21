@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: center;
   /* 와이어프레임 실측값: 로그인·가입 제출 버튼 높이 68px (토큰에 없음, 확인 필요) */
-  height: 68px;
+  height: calc(68 * var(--px));
   padding: 0 var(--space-48);
   border: var(--border-width) solid var(--ui-border);
   border-radius: var(--radius-pill);
@@ -16,7 +16,7 @@
 
 /* 와이어프레임 실측값: 첫 화면 큰 버튼 높이 80px (토큰에 없음, 확인 필요) */
 .large {
-  height: 80px;
+  height: calc(80 * var(--px));
 }
 
 .primary {

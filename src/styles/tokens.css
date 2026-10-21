@@ -1,8 +1,16 @@
 /*
  * 디자인 토큰 (원본: design/tokens.json).
  * 값을 바꿀 때는 design/ 쪽 원본과 맞는지 먼저 확인한다.
+ *
+ * 크기·간격·글자 크기는 1920px 화면 기준 px 값이다. 1920px보다 좁은 화면에서는
+ * 디자인 전체를 비율로 줄이기 위해 "N * var(--px)" 로 적는다.
+ * (모바일 설계 전까지 쓰는 임시 방식이다.)
+ * 테두리 3px 와 포커스 링은 사양대로 px 그대로 둔다.
  */
 :root {
+  /* 1920px 이상에서는 1px, 그보다 좁으면 화면 폭에 비례해 작아지는 길이 단위 */
+  --px: min(1px, calc(100vw / 1920));
+
   /* 색 */
   --surface-page: #ffffff;
   --main-header: #f1f3e0;
@@ -18,31 +26,32 @@
   --state-success: #2f6a3f;
 
   /* 그림자 */
-  --main-shadow: 0 3px 7.6px 4px #b3bd9840;
-  --card-shadow: 0 5px 6.8px 1px #e9eddf;
-  --footer-shadow: 0 -3px 7.6px 4px #b3bd9840;
+  --main-shadow: 0 calc(3 * var(--px)) calc(7.6 * var(--px)) calc(4 * var(--px)) #b3bd9840;
+  --card-shadow: 0 calc(5 * var(--px)) calc(6.8 * var(--px)) calc(1 * var(--px)) #e9eddf;
+  --footer-shadow: 0 calc(-3 * var(--px)) calc(7.6 * var(--px)) calc(4 * var(--px)) #b3bd9840;
 
   /* 모서리 */
-  --radius-card: 40px;
-  --radius-pill: 40px;
-  --radius-field: 32px;
+  --radius-card: calc(40 * var(--px));
+  --radius-pill: calc(40 * var(--px));
+  --radius-field: calc(32 * var(--px));
 
   /* 간격 */
-  --space-8: 8px;
-  --space-12: 12px;
-  --space-16: 16px;
-  --space-24: 24px;
-  --space-32: 32px;
-  --space-48: 48px;
+  --space-8: calc(8 * var(--px));
+  --space-12: calc(12 * var(--px));
+  --space-16: calc(16 * var(--px));
+  --space-24: calc(24 * var(--px));
+  --space-32: calc(32 * var(--px));
+  --space-48: calc(48 * var(--px));
 
   /* 크기 */
-  --header-height: 104px;
-  --footer-height: 88px;
-  --nav-item-height: 56px;
-  --pixel-icon-size: 32px;
-  --field-height: 56px;
-  --card-width: 450px;
-  --card-height: 700px;
+  --header-height: calc(104 * var(--px));
+  --footer-height: calc(88 * var(--px));
+  --nav-item-height: calc(56 * var(--px));
+  --pixel-icon-size: calc(32 * var(--px));
+  --field-height: calc(56 * var(--px));
+  --card-width: calc(450 * var(--px));
+  --card-height: calc(700 * var(--px));
+  /* 사양이 3px 로 정했으므로 줄이지 않는다 */
   --border-width: 3px;
 
   /* 글꼴 */
@@ -51,10 +60,10 @@
   /* 글자 크기·굵기 (줄 간격은 아직 정하지 않았다) */
   --font-weight-regular: 400;
   --font-weight-bold: 700;
-  --text-title-size: 56px;
-  --text-heading-size: 36px;
-  --text-body-size: 24px;
-  --text-label-size: 22px;
-  --text-caption-size: 18px;
-  --text-logo-size: 40px;
+  --text-title-size: calc(56 * var(--px));
+  --text-heading-size: calc(36 * var(--px));
+  --text-body-size: calc(24 * var(--px));
+  --text-label-size: calc(22 * var(--px));
+  --text-caption-size: calc(18 * var(--px));
+  --text-logo-size: calc(40 * var(--px));
 }
