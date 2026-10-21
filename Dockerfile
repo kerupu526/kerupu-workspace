@@ -17,12 +17,12 @@ FROM node:${NODE_VERSION}-alpine AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 # NEXT_PUBLIC_ 값은 빌드할 때 코드에 박힌다. .env 는 이미지에 넣지 않으므로 빌드 인자로 받는다.
-# 브라우저로 나가도 되는 공개 값만 여기에 둔다. 비밀값(service_role, DB 비밀번호)은 절대 인자로 넘기지 않는다
+# 브라우저로 나가도 되는 공개 값만 여기에 둔다. 비밀값(secret 키, DB 비밀번호)은 절대 인자로 넘기지 않는다
 # (이미지 기록에 남는다). 비밀값은 실행할 때 env_file 로만 넘긴다.
 ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
-    NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build

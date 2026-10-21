@@ -6,7 +6,7 @@ services:
       # 공개 값만 빌드 때 넘긴다. compose 는 같은 폴더의 .env 를 읽어서 ${...} 를 채운다. 없으면 빈 값이다.
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
     image: kerupu-workspace:latest
     container_name: kerupu
     restart: unless-stopped

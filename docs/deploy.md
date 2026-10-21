@@ -140,8 +140,8 @@ docker compose up -d --build
 | 변수 | 공개 여부 | 쓰이는 때 |
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | 공개 (브라우저로 나감) | **빌드할 때** 코드에 박힘 + 실행 |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 공개 (브라우저로 나감) | **빌드할 때** 코드에 박힘 + 실행 |
-| `SUPABASE_SERVICE_ROLE_KEY` | **비밀** (RLS 우회) | 실행할 때만. 서버 코드에서만 가져온다 |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 공개 (브라우저로 나감) | **빌드할 때** 코드에 박힘 + 실행 |
+| `SUPABASE_SECRET_KEY` | **비밀** (RLS 우회) | 실행할 때만. 서버 코드에서만 가져온다 |
 | `SUPABASE_DB_PASSWORD` | **비밀** | 마이그레이션, 백업 같은 관리 작업에만. 웹 앱은 쓰지 않는다. **`.env`가 아니라 `~/.config/kerupu/admin.env`에 둔다** (아래) |
 
 `.env`는 컨테이너 환경에 통째로 들어가므로, 웹 앱이 쓰지 않는 관리용 비밀(DB 비밀번호)은 컨테이너가 읽지 않는 별도 파일에 둔다.
@@ -156,7 +156,7 @@ docker compose up -d --build
 
 - **`.env`는 어디에도 올리지 않는다.** `.gitignore`와 `.dockerignore`로 막혀 있다 (견본 `.env.example`만 올라간다). 올라갔는지 의심되면 `git ls-files | grep env`로 확인한다.
 - **비밀값을 채팅, 이슈, 커밋 메시지, 로그에 붙여 넣지 않는다.** 이 저장소를 다루는 AI 도구에게도 값을 알려 주지 않는다 (키 이름과 어디에 두는지만 말하면 충분하다).
-- **`NEXT_PUBLIC_`은 브라우저에 공개된다는 뜻이다.** 비밀값에는 절대 붙이지 않는다. 공개 값(anon 키)은 노출돼도 되도록 모든 테이블에 RLS를 켜 둔다.
+- **`NEXT_PUBLIC_`은 브라우저에 공개된다는 뜻이다.** 비밀값에는 절대 붙이지 않는다. 공개 값(publishable 키)은 노출돼도 되도록 모든 테이블에 RLS를 켜 둔다.
 - **공개 값을 바꾸면 이미지를 다시 빌드한다** (`docker compose up -d --build`). 비밀값만 바꾸면 `docker compose up -d`로 컨테이너만 다시 만들면 된다.
 - 비밀값은 빌드 인자로 넘기지 않는다. 이미지 기록에 남기 때문이다. `docker-compose.yml`은 공개 값 두 개만 빌드 인자로, 나머지는 실행할 때 `env_file`로 넘긴다.
 - 키가 노출됐다고 의심되면 Supabase 대시보드에서 바로 재발급(rotate)하고 `.env`를 고친 뒤 다시 올린다.
