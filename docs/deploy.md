@@ -21,6 +21,14 @@ cd kerupu-workspace
 docker compose up -d --build
 ```
 
+포트와 열 주소는 서버의 `.env`로 바꾼다 (`docker-compose.yml`이 읽는다). 다른 서비스가 3000번을 쓰고 있거나 Tailscale 안으로만 열고 싶을 때:
+
+```bash
+# .env
+BIND_ADDRESS=100.x.y.z   # 이 서버의 Tailscale 주소 (tailscale ip -4)
+HOST_PORT=3100
+```
+
 확인:
 
 ```bash
@@ -52,7 +60,7 @@ docker compose up -d --build
 
 ## 앞에 리버스 프록시를 둘 때
 
-도메인(kerupu.tech)과 HTTPS는 Caddy나 nginx 같은 리버스 프록시가 맡는다. 그럴 때는 `docker-compose.yml`의 포트를 `"127.0.0.1:3000:3000"`으로 바꿔서 서버 밖에서 3000번으로 바로 들어오지 못하게 한다.
+도메인(kerupu.tech)과 HTTPS는 Caddy나 nginx 같은 리버스 프록시가 맡는다. 기본 설정이 이미 `127.0.0.1:3000`(이 컴퓨터 안에서만)이라서 서버 밖에서 바로 들어올 수 없다.
 
 Caddy 예시 (HTTPS 인증서는 자동):
 

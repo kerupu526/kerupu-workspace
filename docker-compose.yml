@@ -11,8 +11,9 @@ services:
     container_name: kerupu
     restart: unless-stopped
     ports:
-      # 서버 안에서만 열고 싶으면 "127.0.0.1:3000:3000" 으로 바꾼다 (앞에 리버스 프록시를 둘 때)
-      - "3000:3000"
+      # 기본은 이 컴퓨터 안(127.0.0.1)의 3000번에만 연다. 바꾸려면 .env 에 BIND_ADDRESS, HOST_PORT 를 쓴다.
+      # 예) 다른 서비스가 3000번을 쓰고 Tailscale 안에서만 열고 싶을 때: BIND_ADDRESS=100.x.y.z, HOST_PORT=3100
+      - "${BIND_ADDRESS:-127.0.0.1}:${HOST_PORT:-3000}:3000"
     # 서버의 .env 파일(비밀값, 저장소에는 없다)을 컨테이너 환경 변수로 넘긴다. 파일이 없어도 시작은 된다.
     # 견본은 .env.example. 서버에서 .env 를 만든 뒤에는 `chmod 600 .env` 로 다른 사용자가 못 읽게 한다.
     env_file:
