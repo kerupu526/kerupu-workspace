@@ -71,11 +71,15 @@
   color: var(--surface-page);
 }
 
+/* 픽셀 아이콘은 16칸 격자라서, 크기를 16px 의 정수배로 맞춰야 칸 경계가 고르게 보인다.
+   화면이 좁아 소수점 크기가 되면 칸이 번갈아 굵고 얇아져 깨져 보이므로, 16px 단위로 내림한다. */
 .icon {
   display: block;
   flex: none;
   width: var(--pixel-icon-size);
   height: var(--pixel-icon-size);
+  width: max(16px, round(down, var(--pixel-icon-size), 16px));
+  height: max(16px, round(down, var(--pixel-icon-size), 16px));
 }
 
 .brand:focus-visible,
