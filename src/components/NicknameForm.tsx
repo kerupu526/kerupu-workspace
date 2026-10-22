@@ -4,7 +4,8 @@ import { useActionState } from "react";
 import { Button } from "./Button";
 import Field from "./Field";
 import styles from "./AuthForms.module.css";
-import { updateNickname, type AuthState } from "@/app/login/actions";
+import { updateNickname } from "@/app/account/actions";
+import type { AuthState } from "@/app/login/actions";
 import { MAX_NICKNAME_LENGTH } from "@/lib/nickname";
 
 const NO_MESSAGE: AuthState = {};

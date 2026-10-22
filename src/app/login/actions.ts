@@ -2,7 +2,6 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { parseNickname } from "@/lib/nickname";
 
@@ -39,7 +38,7 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
   // 어느 칸이 틀렸는지 알려 주지 않는다 (가입 여부를 추측하지 못하게)
   if (error) return { message: "이메일 또는 비밀번호가 맞지 않아요." };
 
-  redirect("/login");
+  redirect("/account");
 }
 
 export async function signUp(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -74,28 +73,5 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
     return { message: "입력한 이메일로 확인 메일을 보냈어요. 메일의 링크를 누르면 가입이 끝나요." };
   }
 
-  redirect("/login");
-}
-
-/* 내 계정에서 닉네임 바꾸기. 처음 정하는 것도 같은 동작이다 (대시보드에서 만든 계정은 닉네임이 없다). */
-export async function updateNickname(_prev: AuthState, formData: FormData): Promise<AuthState> {
-  const nickname = parseNickname(formData.get("nickname"));
-  if (!nickname.ok) return { message: nickname.message };
-
-  const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return { message: "로그인이 끝났어요. 다시 로그인해 주세요." };
-
-  // 닉네임은 화면 표시용이다. 권한 판단에는 쓰지 않는다 (user_metadata 는 사용자가 고칠 수 있다).
-  const { error } = await supabase.auth.updateUser({ data: { nickname: nickname.value } });
-  if (error) return { message: "닉네임을 바꾸지 못했어요. 잠시 뒤 다시 해 주세요." };
-
-  revalidatePath("/login");
-  return { message: "닉네임을 저장했어요." };
-}
-
-export async function signOut() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect("/login");
+  redirect("/account");
 }

@@ -39,7 +39,8 @@ src/
     layout.tsx       Header · <main> · Footer
     page.tsx         /
     about/           /about
-    login/           /login
+    login/           /login (로그인한 사용자는 /account 로)
+    account/         /account (내 계정, 로그인 필요)
     board/           /board
     my-board/        /my-board
     playlist/        /playlist
