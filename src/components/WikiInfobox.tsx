@@ -46,8 +46,8 @@ export default function WikiInfobox({ title, imageLabel, image, rows, table }: W
           ))}
         </tbody>
       </table>
-      {/* 표의 칸 안 각주는 지원하지 않아서(본문에서만 만든다) 각주 목록은 비어 있다 */}
-      {table ? <WikiTable block={table} footnotes={[]} className={styles.extraTable} /> : null}
+      {/* 머리글 줄은 맨 위 제목처럼 가운데에 둔다. 표의 칸 안 각주는 지원하지 않아서(본문에서만 만든다) 각주 목록은 비어 있다 */}
+      {table ? <WikiTable block={table} footnotes={[]} className={styles.extraTable} centerHeader /> : null}
     </aside>
   );
 }

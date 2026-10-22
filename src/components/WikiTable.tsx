@@ -13,10 +13,13 @@ export default function WikiTable({
   block,
   footnotes,
   className,
+  centerHeader = false,
 }: {
   block: TableBlock;
   footnotes: string[];
   className?: string;
+  /** 머리글 줄을 열 정렬과 상관없이 가운데에 둔다 (정보 상자 표: 맨 위 제목처럼 구역 제목 줄이다) */
+  centerHeader?: boolean;
 }) {
   const merge = (row: number, col: number) => block.merges?.[row]?.[col];
   const colSpan = (row: number, col: number) => merge(row, col)?.colSpan;
@@ -33,7 +36,7 @@ export default function WikiTable({
                   key={j}
                   scope={(colSpan(0, j) ?? 1) > 1 ? "colgroup" : "col"}
                   colSpan={colSpan(0, j)}
-                  style={{ textAlign: block.align[j] ?? undefined }}
+                  style={{ textAlign: centerHeader ? "center" : (block.align[j] ?? undefined) }}
                 >
                   {cell.map((part, k) => (
                     <Inline key={k} part={part} footnotes={footnotes} />
