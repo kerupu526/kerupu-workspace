@@ -38,6 +38,7 @@ function listHref({ query, work, sort }: Filters): string {
 
 export default async function DictionaryPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
+  const deleted = pick(params.deleted) === "document";
   const filters: Filters = {
     query: pick(params.q),
     work: pick(params.work),
@@ -110,6 +111,9 @@ export default async function DictionaryPage({ searchParams }: { searchParams: P
             {filtered ? `조건에 맞는 캐릭터 ${items.length}명` : `캐릭터 ${items.length}명`}
           </p>
           <div className={styles.toolbarActions}>
+            <ButtonLink href="/images" variant="secondary" size="compact">
+              이미지 관리
+            </ButtonLink>
             <ButtonLink href="/images/new" variant="secondary" size="compact">
               새 이미지 업로드
             </ButtonLink>
@@ -118,6 +122,11 @@ export default async function DictionaryPage({ searchParams }: { searchParams: P
             </ButtonLink>
           </div>
         </div>
+        {deleted ? (
+          <p className={styles.notice} role="status">
+            문서를 삭제했어요.
+          </p>
+        ) : null}
         <h2 className="visually-hidden">캐릭터 목록</h2>
         {items.length === 0 ? (
           <p className={styles.empty}>

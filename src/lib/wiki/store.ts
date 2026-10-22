@@ -30,6 +30,26 @@ export async function getDocumentSource(slug: string): Promise<StoredDocument | 
   return { title: doc.title, markdown: revision.markdown, modified: revision.created_at };
 }
 
+/* 삭제 권한을 가르는 데 쓰는 문서 정보 (누가, 언제 만들었는지) */
+export interface DocumentInfo {
+  slug: string;
+  title: string;
+  createdBy: string | null;
+  /** 만든 시각 (ISO 문자열) */
+  createdAt: string;
+}
+
+export async function getDocumentInfo(slug: string): Promise<DocumentInfo | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("documents")
+    .select("slug, title, created_by, created_at")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (!data) return null;
+  return { slug: data.slug, title: data.title, createdBy: data.created_by, createdAt: data.created_at };
+}
+
 /* 캐릭터 사전 목록의 한 줄. 작품과 한 줄 설명은 비어 있을 수 있다 (목록 열이 생기기 전에 저장한 문서). */
 export interface CharacterListItem {
   slug: string;

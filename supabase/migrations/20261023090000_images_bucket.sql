@@ -5,7 +5,7 @@
 --   - 올리기: 일반 사용자(anon, authenticated)에게는 권한을 주지 않는다. 정책을 만들지 않아서 Storage API 로 직접 올릴 수 없다.
 --     올리기는 우리 서버(src/app/images/new/actions.ts)가 로그인 여부와 파일 내용(형식, SVG 안의 스크립트)을 검사한 뒤
 --     secret 키로만 한다.
---   - 고치기, 지우기: 정책이 없어서 일반 사용자는 못 한다. 잘못 올린 파일은 Supabase 대시보드(Storage)에서 지운다.
+--   - 고치기, 지우기: 정책이 없어서 일반 사용자는 못 한다. 지우기는 서버가 secret 키로 한다 (20261024090000_deletion.sql 의 규칙을 통과한 뒤).
 --
 -- 한도와 허용 형식은 src/lib/wiki/image-upload.ts 의 MAX_IMAGE_BYTES, ACCEPTED_TYPES 와 같게 맞춘다.
 

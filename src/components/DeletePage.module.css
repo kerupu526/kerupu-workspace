@@ -1,0 +1,51 @@
+/* 영구 삭제 확인 화면 (문서, 이미지 공통) */
+.center {
+  display: flex;
+  justify-content: center;
+}
+
+.what {
+  margin: 0;
+  font-size: var(--text-body-size);
+  overflow-wrap: anywhere;
+}
+
+/* 되돌릴 수 없다는 경고. 오류 색을 쓰고, 색만으로 전하지 않도록 글로도 말한다. */
+.warning {
+  margin: 0;
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-bold);
+  color: var(--state-error);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding-left: 1.25em;
+  font-size: var(--text-caption-size);
+}
+
+.error {
+  margin: 0;
+  font-size: var(--text-body-size);
+  color: var(--state-error);
+}
+
+.thumb {
+  align-self: flex-start;
+  max-width: 100%;
+  max-height: calc(240 * var(--px));
+  object-fit: contain;
+  border: var(--border-width) solid var(--card-border);
+  border-radius: var(--radius-field);
+  background: var(--surface-page);
+}
+
+/* 카드 안의 링크는 글자색을 따르고 밑줄로 알아본다 (브라우저 기본 파란색을 쓰지 않는다) */
+.link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}

@@ -13,6 +13,7 @@
 - [ ] 비밀번호 재설정: `/login` 의 "비밀번호를 잊으셨나요?" → 메일 → 새 비밀번호 → `/account` 까지 실제 메일로 확인
 - [ ] 내 계정의 "계정 설정 변경": 닉네임, 비밀번호 변경, 이메일 변경(새 주소로 확인 메일이 가고, Supabase 의 "Secure email change"가 켜져 있으면 이전 주소에도 간다)
 - [ ] 이미지 업로드: `20261023090000_images_bucket.sql` 적용(dev 먼저) → (서버 `.env`의 `SUPABASE_SECRET_KEY`는 이미 있음) → Nginx 설정 복사 후 reload(`client_max_body_size`) → `/images/new`에서 PNG, SVG 올려 보고 문서에 붙여 넣기. `20261023100000_documents_image.sql`, `20261023110000_documents_image_media.sql`도 순서대로 적용(목록 카드 대표 이미지 열. `supabase/tests/documents_image.sql`로 확인). 이미 있는 문서는 편집 화면에서 한 번 저장해야 `이미지:`가 목록에 반영된다
+- [ ] 문서·이미지 영구 삭제: `20261024090000_deletion.sql` 적용(dev 먼저, 위 네 개 다음) → `supabase/tests/deletion.sql`(`matched` 모두 `t`) → `/images`(이미지 관리)에서 방금 올린 것은 삭제가 막히는지(30분 뒤 가능), 30분 지난 것은 지워지는지, 문서 `삭제` 메뉴로 지워지는지, 운영자 계정은 바로 지워지는지 확인. 서버 `.env`의 `SUPABASE_SECRET_KEY`가 있어야 이미지가 지워진다
 - [ ] dev 서버 준비: Cloudflare Public Hostname + Nginx + 별도 컨테이너 + 별도 Supabase
 
 ## 문구와 자산

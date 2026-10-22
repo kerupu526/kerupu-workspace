@@ -185,6 +185,9 @@ export default function ImageUploadForm() {
           <ButtonLink href="/dictionary" variant="secondary">
             캐릭터 사전으로
           </ButtonLink>
+          <ButtonLink href="/images" variant="secondary">
+            내 이미지
+          </ButtonLink>
           <Button type="submit" disabled={pending || !picked}>
             {pending ? "올리는 중" : "업로드"}
           </Button>

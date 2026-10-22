@@ -89,6 +89,8 @@ export interface WikiDocumentProps {
   footnotes: string[];
   /** 있으면 "편집" 메뉴가 이 주소로 가는 링크가 된다. 없으면 점선 모양의 비활성 버튼이다. */
   editHref?: string;
+  /** 있으면 "삭제" 메뉴가 이 주소(삭제 확인 화면)로 가는 링크가 된다. 없으면 메뉴에 나오지 않는다. */
+  deleteHref?: string;
   /** 편집 화면의 미리보기로 쓸 때: 문서 메뉴를 숨긴다 (눌러서 편집 중인 글을 잃지 않게) */
   preview?: boolean;
 }
@@ -246,6 +248,7 @@ export default function WikiDocument({
   lead = [],
   footnotes,
   editHref,
+  deleteHref,
   preview = false,
 }: WikiDocumentProps) {
   const numbered = numberSections(sections);
@@ -293,6 +296,11 @@ export default function WikiDocument({
                   편집<span className="visually-hidden"> (준비 중)</span>
                 </Button>
               )}
+              {deleteHref ? (
+                <ButtonLink href={deleteHref} variant="secondary" size="compact">
+                  삭제
+                </ButtonLink>
+              ) : null}
               {/* 역사는 위키 기능이 생기면 쓸 수 있다. 지금은 점선 모양의 비활성 버튼이다. */}
               <Button variant="dashed" size="compact" disabled>
                 역사<span className="visually-hidden"> (준비 중)</span>

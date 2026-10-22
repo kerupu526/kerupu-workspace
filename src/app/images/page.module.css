@@ -1,0 +1,84 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-24);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-heading-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+
+.notice,
+.empty,
+.note {
+  margin: 0;
+  font-size: var(--text-body-size);
+}
+
+.note {
+  font-size: var(--text-caption-size);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-24);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 카드는 기본 폭(450px)이 고정이라, 격자 칸을 가득 채우려면 폭을 100%로 바꾼다 */
+.item {
+  --card-w: 100%;
+  --card-h: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-24);
+}
+
+.thumb {
+  width: 100%;
+  height: calc(180 * var(--px));
+  object-fit: contain;
+  border: var(--border-width) solid var(--card-border);
+  border-radius: var(--radius-field);
+  background: var(--surface-page);
+}
+
+.name {
+  margin: 0;
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--text-caption-size);
+  overflow-wrap: anywhere;
+}
+
+.itemActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+  margin-top: auto;
+}

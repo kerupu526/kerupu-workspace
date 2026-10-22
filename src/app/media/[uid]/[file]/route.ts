@@ -3,7 +3,7 @@ import { IMAGE_BUCKET, MEDIA_TYPES, mediaObjectPath } from "@/lib/wiki/image-url
 /*
  * 올린 이미지를 우리 사이트 주소(/media/<사용자 ID>/<파일 ID>.<확장자>)로 내려 준다.
  * Storage 의 images 버킷(공개)에서 받아서 그대로 흘려 보내고, 헤더는 여기서 정한다:
- *   - 파일 이름이 무작위 ID 라서 내용이 바뀌지 않으므로 1년 동안 캐시한다 (Cloudflare 와 브라우저가 이 캐시를 쓴다).
+ *   - 파일 이름이 무작위 ID 라서 내용은 바뀌지 않지만, 삭제된 이미지가 오래 남지 않도록 하루만 캐시한다 (Cloudflare 와 브라우저가 이 캐시를 쓴다).
  *   - 형식(Content-Type)은 Storage 가 준 값이 아니라 확장자로 정한다.
  *   - SVG 를 주소로 직접 열어도 스크립트가 돌지 않도록 CSP(sandbox, default-src 'none')를 붙이고 nosniff 를 켠다.
  *     (그림으로 <img> 에 넣을 때는 이 헤더와 상관없이 스크립트가 돌지 않는다)
@@ -35,7 +35,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ uid
   const headers: Record<string, string> = {
     ...SAFE_HEADERS,
     "content-type": MEDIA_TYPES[target.ext],
-    "cache-control": "public, max-age=31536000, immutable",
+    "cache-control": "public, max-age=86400",
     "content-disposition": "inline",
   };
   const length = upstream.headers.get("content-length");

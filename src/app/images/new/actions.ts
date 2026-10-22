@@ -44,7 +44,8 @@ export async function uploadImage(_prev: UploadState, formData: FormData): Promi
   }
   if (!kind) return { message: `이 파일은 올릴 수 없어요. ${ACCEPTED_LABEL} 이미지만 올릴 수 있어요.` };
 
-  const objectPath = `${auth.user.id}/${randomUUID()}.${kind.ext}`;
+  const fileId = randomUUID();
+  const objectPath = `${auth.user.id}/${fileId}.${kind.ext}`;
   let admin: ReturnType<typeof createAdminClient>;
   try {
     admin = createAdminClient();
@@ -59,6 +60,22 @@ export async function uploadImage(_prev: UploadState, formData: FormData): Promi
   if (error) {
     // 버킷이 없거나(마이그레이션 미적용), 키가 맞지 않는 경우 등. 사용자에게는 일반 문구를, 로그에는 이유를 남긴다.
     console.error("[image-upload] Storage 에 올리지 못했습니다:", error.message);
+    return { message: "이미지를 올리지 못했어요. 잠시 뒤 다시 해 주세요." };
+  }
+
+  // 올린 파일마다 한 줄을 남긴다 (이미지 관리와 삭제의 기준). 못 남기면 주인 없는 파일이 생기므로 파일도 지운다.
+  const { error: rowError } = await admin.from("images").insert({
+    id: fileId,
+    owner_id: auth.user.id,
+    path: objectPath,
+    mime: kind.mime,
+    bytes: file.size,
+    original_name: file.name.slice(0, 300),
+  });
+  if (rowError) {
+    console.error("[image-upload] 이미지 기록을 남기지 못했습니다:", rowError.message);
+    const { error: cleanupError } = await admin.storage.from(IMAGE_BUCKET).remove([objectPath]);
+    if (cleanupError) console.error("[image-upload] 올린 파일을 되돌리지 못했습니다:", cleanupError.message);
     return { message: "이미지를 올리지 못했어요. 잠시 뒤 다시 해 주세요." };
   }
 

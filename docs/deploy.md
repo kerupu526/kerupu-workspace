@@ -237,7 +237,7 @@ docker compose up -d --build
 
 ## 이미지 업로드 (Supabase Storage)
 
-캐릭터 사전의 "새 이미지 업로드"(`/images/new`)는 이미지를 Supabase Storage의 `images` 버킷에 올리고, 글에서는 우리 사이트 주소 `/media/<사용자 ID>/<파일 ID>.<확장자>`로 쓴다. `/media`는 서버(`app/media`)가 Storage에서 받아서 내려 주는 길이라(파일 이름이 무작위 ID라 1년 캐시, `Cache-Control: immutable`) Supabase 주소가 글에 박히지 않고 Cloudflare가 이미지를 캐시한다. 서버 디스크는 쓰지 않아서 컨테이너는 계속 읽기 전용이다. 켜려면 세 가지가 필요하다.
+캐릭터 사전의 "새 이미지 업로드"(`/images/new`)는 이미지를 Supabase Storage의 `images` 버킷에 올리고, 글에서는 우리 사이트 주소 `/media/<사용자 ID>/<파일 ID>.<확장자>`로 쓴다. `/media`는 서버(`app/media`)가 Storage에서 받아서 내려 주는 길이라(삭제한 이미지가 오래 남지 않도록 `Cache-Control: public, max-age=86400`, 하루 캐시) Supabase 주소가 글에 박히지 않고 Cloudflare가 이미지를 캐시한다. 서버 디스크는 쓰지 않아서 컨테이너는 계속 읽기 전용이다. 켜려면 세 가지가 필요하다.
 
 1. **버킷 만들기:** `supabase/migrations/20261023090000_images_bucket.sql`을 DB에 적용한다(dev 먼저, 운영은 확인한 뒤). 확인은 `supabase/tests/images_bucket.sql`. 대표 이미지 열(`20261023100000_documents_image.sql`)과 `/media` 경로 허용(`20261023110000_documents_image_media.sql`)도 순서대로 적용한다(`supabase/tests/documents_image.sql`로 확인).
 2. **secret 키:** 서버 `.env`에 `SUPABASE_SECRET_KEY`를 채운다(Supabase 대시보드 > Project Settings > API Keys의 Secret key). 올리기는 서버가 파일을 검사한 뒤 이 키로만 한다(일반 사용자에게는 버킷 올리기 권한이 없다). 값을 바꾼 뒤에는 `docker compose up -d`로 컨테이너를 다시 만든다.
@@ -245,9 +245,21 @@ docker compose up -d --build
 
 - 파일은 8MB 이하의 PNG, JPEG, WebP, GIF, SVG만 올라가고, 형식은 서버가 파일 내용으로 확인한다. SVG는 스크립트나 바깥 주소 참조가 있으면 거부한다.
 - 업로드가 "이미지를 올리지 못했어요"로 실패하면 서버 로그에 이유가 남는다: `docker compose logs --tail 50 web | grep image-upload` (버킷이 없으면 마이그레이션 미적용, 키가 틀리면 인증 오류).
-- 올린 파일은 사용자가 지울 수 없다. 잘못 올린 파일은 Supabase 대시보드 > Storage > images에서 지운다.
+- 지우기는 사이트의 **이미지 관리**(`/images`)에서 한다. 올린 사람은 올린 지 **30분이 지나고 30일이 지나기 전에만**, 운영자는 언제든 영구 삭제한다 (아래 "삭제" 참고). 대시보드에서 파일만 지우면 `public.images` 줄이 남으니 가능하면 사이트에서 지운다.
 - Cloudflare 무료 플랜의 업로드 한도(100MB)는 8MB보다 커서 따로 손볼 것이 없다.
 - `/media`가 Supabase에서 받지 못하면(없는 파일 등) 404, Supabase에 닿지 못하면 502를 돌려준다. 이미지가 안 보이면 `curl -I https://<도메인>/media/<사용자 ID>/<파일 ID>.png`로 상태를 확인한다. Cloudflare가 이미지를 캐시하므로 같은 이미지를 반복해서 받아도 서버와 Supabase 트래픽은 거의 늘지 않는다.
+
+## 삭제 (문서, 이미지)
+
+캐릭터 문서(`/dictionary/<주소>/delete`)와 이미지(`/images/<ID>/delete`)는 **영구 삭제**다. 문서는 모든 판까지, 이미지는 Storage 파일까지 지워지고 되돌릴 수 없다.
+
+- 운영자: 언제든 바로 삭제.
+- 만든 사람(올린 사람): 만든 지 **30분이 지나고 30일이 지나기 전에만** 바로 삭제. 30분 전에는 막히고(너무 일찍 지울 수 없다), 30일 뒤에는 운영자만 지울 수 있다.
+- 규칙은 DB가 정한다: `supabase/migrations/20261024090000_deletion.sql`의 `delete_document`, `check_image_deletion`이 로그인한 본인의 권한과 시간을 검사한다. 이 마이그레이션은 `documents`의 직접 수정 권한도 열 단위로 줄여서(`created_at` 등은 사용자가 못 바꾼다) 시간 규칙을 피하지 못하게 한다.
+- 이미지는 `public.images` 표(올릴 때 서버가 한 줄을 넣는다)로 관리한다. 마이그레이션이 이미 올라가 있던 파일도 표에 채운다. 파일은 서버가 `SUPABASE_SECRET_KEY`로 Storage에서 지운다 — **키가 비어 있으면 이미지 삭제가 실패한다.**
+- 이미지를 지우면 그 이미지를 대표 이미지로 쓰던 문서는 대표 이미지가 비고, 본문에 넣은 그림은 깨진 채 남는다(삭제 화면에서 쓰는 문서를 미리 알려 준다).
+- Cloudflare나 브라우저에 남은 사본은 최대 하루 보일 수 있다(`/media` 캐시 1일). 바로 없애야 하면 Cloudflare > Caching > Purge에서 그 주소를 지운다.
+- 적용 순서: 앞선 마이그레이션 다음에 `20261024090000_deletion.sql` (dev 먼저). 확인은 `supabase/tests/deletion.sql`(결과의 `matched`가 모두 `t`).
 
 ## 서버의 저장 위치 (`/data/kerupu`)
 
