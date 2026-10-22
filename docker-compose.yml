@@ -7,8 +7,10 @@ services:
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
-    image: kerupu-workspace:latest
-    container_name: kerupu
+    # 같은 서버에 dev 를 나란히 띄울 때는 dev 폴더의 .env 에서 IMAGE_NAME, CONTAINER_NAME 을 다르게 준다 (docs/deploy.md 의 dev 절).
+    # 값이 없으면 지금까지와 똑같이 kerupu-workspace:latest, kerupu 이다.
+    image: ${IMAGE_NAME:-kerupu-workspace:latest}
+    container_name: ${CONTAINER_NAME:-kerupu}
     restart: unless-stopped
     ports:
       # 기본은 이 컴퓨터 안(127.0.0.1)의 3000번에만 연다. 바꾸려면 .env 에 BIND_ADDRESS, HOST_PORT 를 쓴다.

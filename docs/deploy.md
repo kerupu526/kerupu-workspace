@@ -133,6 +133,33 @@ sudo rm /etc/nginx/sites-enabled/kerupu.tech && sudo nginx -t && sudo systemctl 
 - 컨테이너를 내리면 `kerupu.tech`는 502가 난다. 점검 때는 위의 "되돌리기"로 공사 중 페이지로 바꿔 두면 깔끔하다.
 - 방문자의 실제 주소는 `CF-Connecting-IP` 헤더에 있다 (Nginx가 보는 접속 주소는 터널이다). 이 헤더는 Cloudflare를 거치지 않은 직접 접속에서는 조작할 수 있으므로, 속도 제한 같은 곳에 쓸 때는 Nginx가 Cloudflare 주소에서 온 요청만 믿도록 `real_ip` 설정을 추가한다.
 
+## dev 서버 (dev.kerupu.tech)
+
+`dev` 브랜치를 운영과 나란히 띄우는 방법이다. 폴더, 컨테이너, 이미지, 포트, Supabase 프로젝트를 모두 운영과 분리한다.
+
+| | 운영 | dev |
+|---|---|---|
+| 폴더 | `~/Projects/kerupu-workspace` | `~/Projects/kerupu-workspace-dev` |
+| 브랜치 | `main` | `dev` |
+| 컨테이너 / 이미지 | `kerupu` / `kerupu-workspace:latest` | `kerupu-dev` / `kerupu-workspace-dev:latest` |
+| 포트 | `3100` | `3101` |
+| Supabase | 운영 프로젝트 | **dev 전용 프로젝트** |
+| Nginx 설정 | `deploy/nginx/kerupu.tech.conf` | `deploy/nginx/dev.kerupu.tech.conf` |
+
+dev 폴더의 `.env`에는 운영 값과 겹치지 않게 아래를 넣는다 (Supabase 값은 dev 프로젝트의 것).
+
+```bash
+IMAGE_NAME=kerupu-workspace-dev:latest
+CONTAINER_NAME=kerupu-dev
+BIND_ADDRESS=100.74.143.1
+HOST_PORT=3101
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+SUPABASE_SECRET_KEY=...
+```
+
+Cloudflare 쪽(Public Hostname `dev` → `HTTP localhost:80`, Access 정책)은 대시보드에서 설정한다.
+
 ## 환경 변수와 비밀값 (Supabase)
 
 값 없는 견본이 `.env.example`에 있다. **실제 값은 서버의 `.env` 파일에만 둔다.**
