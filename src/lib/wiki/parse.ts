@@ -5,7 +5,7 @@ import type { WikiBlock, WikiInline, WikiListItem, WikiSection } from "@/compone
 import { sanitizeStyle, toReactStyle } from "./css.ts";
 import { extractMeta, stripCommentsMapped, type WikiMeta } from "./meta.ts";
 import { computeMerges, type CellMark } from "./table-merge.ts";
-import { isLegacyUploadPath, isStorageImageUrl } from "./image-url.ts";
+import { isAllowedImageSrc } from "./image-url.ts";
 import { extractFootnotes, restoreFootnoteText, splitFootnoteMarks, type RawFootnote } from "./footnote.ts";
 
 /*
@@ -91,7 +91,7 @@ export const LIMITS = {
  * NEXT_PUBLIC_ 값은 빌드할 때 코드에 박히므로 브라우저(편집 화면 미리보기)와 서버가 같은 주소를 쓴다.
  */
 export function isSafeImageSrc(src: string): boolean {
-  return isLegacyUploadPath(src) || isStorageImageUrl(src, process.env.NEXT_PUBLIC_SUPABASE_URL);
+  return isAllowedImageSrc(src);
 }
 
 /** 편집 화면용 경고 하나. line 은 원문의 줄(1부터)이고, 어느 줄인지 모를 때는 없다. */

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { parseWiki } from "@/lib/wiki/parse";
+import { imageForList } from "@/lib/wiki/image-url";
 
 /* 저장 결과. 성공하면 문서 화면으로 넘어가므로 메시지는 실패할 때만 있다. */
 export interface SaveState {
@@ -16,7 +17,7 @@ const MAX_LENGTH = 100000;
 /*
  * 문서 저장: 새 판을 추가하고, 문서의 현재 판을 그 판으로 바꾼다.
  * 권한은 로그인한 사용자 본인의 세션으로 정해진다 (RLS). 작성자나 운영자가 아니면 DB 가 막는다.
- * 제목은 메타 블록의 "제목"을 쓰고, 없으면 주소를 쓴다. 작품은 메타 블록의 정보 "작품"을 따라간다(없으면 비운다).
+ * 제목은 메타 블록의 "제목"을 쓰고, 없으면 주소를 쓴다. 작품은 메타 블록의 정보 "작품"을, 목록 카드의 대표 이미지는 "이미지:"를 따라간다(없으면 비운다).
  */
 export async function saveDocument(_prev: SaveState, formData: FormData): Promise<SaveState> {
   const slug = String(formData.get("slug") ?? "");
@@ -58,9 +59,11 @@ export async function saveDocument(_prev: SaveState, formData: FormData): Promis
     return { message: "이 문서를 고칠 권한이 없어요. 문서를 만든 사람이나 운영자만 고칠 수 있어요." };
   }
 
-  const update: { current_revision_id: string; title?: string; work: string | null } = {
+  // 목록 카드의 대표 이미지는 메타 블록의 "이미지:" 를 따라간다 (없거나 허용된 주소가 아니면 비운다)
+  const update: { current_revision_id: string; title?: string; work: string | null; image: string | null } = {
     current_revision_id: revision.id,
     work: workFromSource,
+    image: imageForList(meta.image),
   };
   if (titleFromSource) update.title = titleFromSource;
   const { error: updateError } = await supabase.from("documents").update(update).eq("id", documentId);

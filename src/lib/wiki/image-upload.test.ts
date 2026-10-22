@@ -102,3 +102,42 @@ test("예전 /uploads/ 주소는 그대로 받는다", () => {
   assert.equal(isLegacyUploadPath("/uploads/../a.png"), false);
   assert.equal(isLegacyUploadPath("/other/a.png"), false);
 });
+
+/* ---- 목록 카드용 대표 이미지 (imageForList) ---- */
+
+import { imageForList, isAllowedImageSrc } from "./image-url.ts";
+
+function withBase<T>(value: string | undefined, run: () => T): T {
+  const before = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (value === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+  else process.env.NEXT_PUBLIC_SUPABASE_URL = value;
+  try {
+    return run();
+  } finally {
+    if (before === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    else process.env.NEXT_PUBLIC_SUPABASE_URL = before;
+  }
+}
+
+test("업로드한 주소와 /uploads/ 주소는 목록 카드 이미지로 쓸 수 있다", () => {
+  withBase(BASE, () => {
+    const url = storageImageUrl(BASE, `${ID}/${FILE}.webp`);
+    assert.equal(imageForList(url), url);
+    assert.equal(imageForList("/uploads/characters/a-1.png"), "/uploads/characters/a-1.png");
+    assert.equal(isAllowedImageSrc(url), true);
+  });
+});
+
+test("없거나 허용되지 않거나 DB 모양 검사에 걸릴 주소는 null 이다", () => {
+  withBase(BASE, () => {
+    assert.equal(imageForList(undefined), null);
+    assert.equal(imageForList(""), null);
+    assert.equal(imageForList("https://example.com/a.png"), null);
+    assert.equal(imageForList(`https://evil.example/storage/v1/object/public/images/${ID}/${FILE}.png`), null);
+    assert.equal(imageForList("/uploads/한글 이름.png"), null); // DB 모양(영문, 숫자, . _ - /)이 아니다
+    assert.equal(imageForList("/uploads/../x.png"), null);
+    assert.equal(imageForList(`${storageImageUrl(BASE, `${ID}/${FILE}.png`)}?x=1`), null);
+  });
+  // 프로젝트 주소 설정이 없으면 업로드 주소는 받지 않는다
+  withBase(undefined, () => assert.equal(imageForList(storageImageUrl(BASE, `${ID}/${FILE}.png`)), null));
+});

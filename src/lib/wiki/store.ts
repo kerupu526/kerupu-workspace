@@ -36,6 +36,8 @@ export interface CharacterListItem {
   name: string;
   work: string | null;
   summary: string | null;
+  /** 대표 이미지 주소 (문서 맨 위 메타 블록의 이미지). 없으면 null */
+  image: string | null;
 }
 
 export type CharacterSort = "name" | "recent";
@@ -61,7 +63,7 @@ export async function listCharacters(options: {
 
   let request = supabase
     .from("documents")
-    .select("slug, title, work, summary")
+    .select("slug, title, work, summary, image")
     .not("current_revision_id", "is", null);
   if (options.query) request = request.ilike("title", `%${escapeLike(options.query)}%`);
   if (options.work) request = request.eq("work", options.work);
@@ -76,7 +78,7 @@ export async function listCharacters(options: {
 
   const items = data
     .slice(0, CHARACTER_LIST_LIMIT)
-    .map((row) => ({ slug: row.slug, name: row.title, work: row.work, summary: row.summary }));
+    .map((row) => ({ slug: row.slug, name: row.title, work: row.work, summary: row.summary, image: row.image }));
   return { items, truncated: data.length > CHARACTER_LIST_LIMIT };
 }
 

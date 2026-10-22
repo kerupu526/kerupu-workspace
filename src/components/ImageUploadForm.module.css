@@ -40,15 +40,106 @@
   color: var(--state-error);
 }
 
-.file {
-  width: 100%;
-  padding: var(--space-12) var(--space-24);
+/*
+ * 끌어다 놓는 칸. 입력창과 같은 테두리(main-logo 3px, 실선)를 쓴다 — 점선은 "운영자 전용, 준비 중" 표시라서 쓰지 않는다.
+ * 끌어 오는 동안에는 바탕을 진하게 하고 바깥에 포커스 링과 같은 선을 둘러서 놓을 자리임을 알린다.
+ * 키보드로 진짜 입력에 포커스가 가면 같은 링이 보인다 (:focus-within).
+ */
+.dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(180 * var(--px));
+  padding: var(--space-24);
   background: var(--surface-page);
   border: var(--border-width) solid var(--ui-border);
   border-radius: var(--radius-field);
   color: var(--main-logo);
+  text-align: center;
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .dropzone:hover {
+    background: var(--main-header);
+  }
+}
+
+.dragging {
+  background: var(--main-header);
+  outline: 3px solid var(--main-logo);
+  outline-offset: 4px;
+}
+
+.dropzone:focus-within {
+  outline: 3px solid var(--main-logo);
+  outline-offset: 4px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.dropTitle {
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.dropSub {
   font-size: var(--text-caption-size);
-  font-family: inherit;
+}
+
+/* 버튼처럼 보이는 글자 (실제 동작은 칸 전체가 한다) */
+.pickButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--field-height);
+  padding: 0 var(--space-32);
+  background: var(--card-surface);
+  border: var(--border-width) solid var(--ui-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 고른 뒤: 미리보기와 이름 */
+.picked {
+  display: flex;
+  align-items: center;
+  gap: var(--space-24);
+  width: 100%;
+  text-align: left;
+}
+
+.thumb {
+  flex: none;
+  width: calc(120 * var(--px));
+  height: calc(120 * var(--px));
+  background: var(--card-surface);
+  border-radius: var(--radius-field);
+  object-fit: contain;
+}
+
+.pickedText {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.fileName {
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.fileMeta {
+  font-size: var(--text-caption-size);
 }
 
 .message {

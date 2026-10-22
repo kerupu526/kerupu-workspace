@@ -26,3 +26,26 @@ export function isStorageImageUrl(src: string, base: string | undefined): boolea
 export function isLegacyUploadPath(src: string): boolean {
   return src.startsWith("/uploads/") && !src.includes("..");
 }
+
+/*
+ * 글과 화면에서 이미지로 써도 되는 주소인지 (업로드 화면의 Storage 주소 또는 예전 /uploads/).
+ * NEXT_PUBLIC_ 값은 빌드할 때 코드에 박히므로 브라우저와 서버가 같은 주소를 쓴다.
+ */
+export function isAllowedImageSrc(src: string): boolean {
+  return isLegacyUploadPath(src) || isStorageImageUrl(src, process.env.NEXT_PUBLIC_SUPABASE_URL);
+}
+
+/* documents.image 열의 check 와 같은 모양 (supabase/migrations/20261023100000_documents_image.sql) */
+const DB_UPLOADS = /^\/uploads\/[A-Za-z0-9._/-]+$/;
+const DB_STORAGE = new RegExp(`^https?://[A-Za-z0-9.-]+(?::[0-9]+)?/storage/v1/object/public/${IMAGE_BUCKET}/${UUID}/${UUID}\\.(?:png|jpg|webp|gif|svg)$`);
+
+/*
+ * 문서의 대표 이미지(목록 카드용)로 DB 에 넣을 값. 글에서 허용된 주소이면서 DB 의 모양 검사도 통과하는 것만 돌려주고,
+ * 아니면 null 이다 (DB 검사에 걸려 저장 전체가 실패하지 않게 미리 거른다).
+ */
+export function imageForList(src: string | undefined): string | null {
+  if (!src || src.length > 500) return null;
+  if (!isAllowedImageSrc(src)) return null;
+  const shapeOk = (DB_UPLOADS.test(src) && !src.includes("..")) || DB_STORAGE.test(src);
+  return shapeOk ? src : null;
+}
