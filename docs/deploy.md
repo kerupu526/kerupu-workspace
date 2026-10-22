@@ -244,6 +244,7 @@ docker compose up -d --build
 3. **Nginx 업로드 크기:** `deploy/nginx/kerupu.tech.conf`, `dev.kerupu.tech.conf`에 `client_max_body_size 10m;`가 들어 있다. 서버에서 설정을 다시 복사하고 `sudo nginx -t && sudo systemctl reload nginx`를 해야 반영된다. 이 줄이 없으면(Nginx 기본 1MB) 큰 이미지에서 413 오류가 난다.
 
 - 파일은 8MB 이하의 PNG, JPEG, WebP, GIF, SVG만 올라가고, 형식은 서버가 파일 내용으로 확인한다. SVG는 스크립트나 바깥 주소 참조가 있으면 거부한다.
+- 업로드가 "이미지를 올리지 못했어요"로 실패하면 서버 로그에 이유가 남는다: `docker compose logs --tail 50 web | grep image-upload` (버킷이 없으면 마이그레이션 미적용, 키가 틀리면 인증 오류).
 - 올린 파일은 사용자가 지울 수 없다. 잘못 올린 파일은 Supabase 대시보드 > Storage > images에서 지운다.
 - Cloudflare 무료 플랜의 업로드 한도(100MB)는 8MB보다 커서 따로 손볼 것이 없다.
 

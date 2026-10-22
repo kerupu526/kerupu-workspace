@@ -45,10 +45,22 @@ export async function uploadImage(_prev: UploadState, formData: FormData): Promi
   if (!kind) return { message: `이 파일은 올릴 수 없어요. ${ACCEPTED_LABEL} 이미지만 올릴 수 있어요.` };
 
   const objectPath = `${auth.user.id}/${randomUUID()}.${kind.ext}`;
-  const { error } = await createAdminClient()
-    .storage.from(IMAGE_BUCKET)
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch (error) {
+    // 키가 비어 있는 등 서버 설정 문제. 값은 로그에 남기지 않고 이유만 남긴다 (docker compose logs 로 볼 수 있다).
+    console.error("[image-upload] 관리자 클라이언트를 만들지 못했습니다:", error instanceof Error ? error.message : error);
+    return { message: "이미지를 올리지 못했어요. 서버 설정(SUPABASE_SECRET_KEY)을 확인해 주세요." };
+  }
+  const { error } = await admin.storage
+    .from(IMAGE_BUCKET)
     .upload(objectPath, bytes, { contentType: kind.mime, cacheControl: "31536000", upsert: false });
-  if (error) return { message: "이미지를 올리지 못했어요. 잠시 뒤 다시 해 주세요." };
+  if (error) {
+    // 버킷이 없거나(마이그레이션 미적용), 키가 맞지 않는 경우 등. 사용자에게는 일반 문구를, 로그에는 이유를 남긴다.
+    console.error("[image-upload] Storage 에 올리지 못했습니다:", error.message);
+    return { message: "이미지를 올리지 못했어요. 잠시 뒤 다시 해 주세요." };
+  }
 
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!base) return { message: "이미지를 올리지 못했어요. 서버 설정을 확인해 주세요." };
