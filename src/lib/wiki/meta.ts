@@ -170,6 +170,17 @@ export function extractMeta(
   let section: "분류" | "정보" | "이미지" | null = null;
   const rows = new Map<string, string>();
   const tableLines: { text: string; line: number }[] = [];
+  // 정보: 사이에 다른 이름(이미지: 등)이 끼어서 정보에 속하지 못한 줄이 있을 때 한 번만 경고하려고 쓴다
+  let currentKey = "";
+  let misplacedWarned = false;
+  const warnMisplaced = () => {
+    if (misplacedWarned) return;
+    misplacedWarned = true;
+    warn(
+      `메타 블록: "${currentKey}:" 아래에 들여쓴 줄은 정보 상자에 들어가지 않아 버렸습니다. ` +
+        `정보 상자의 줄(제목, 항목, 표)은 "정보:" 바로 아래에 이어서 쓰고, 이미지: 같은 다른 이름은 그 앞이나 뒤에 쓰세요.`,
+    );
+  };
 
   for (const [offset, raw] of body.entries()) {
     current = start + 1 + offset;
@@ -178,7 +189,7 @@ export function extractMeta(
 
     // 정보 아래의 표 줄 (들여쓰지 않아도 받는다)
     if (/^\s*\|/.test(raw)) {
-      if (section !== "정보") warn("메타 블록: 표는 정보: 아래에 써야 해서 그 줄을 버렸습니다.");
+      if (section !== "정보") warnMisplaced();
       else if (tableLines.length >= MAX_TABLE_LINES) {
         if (tableLines.length === MAX_TABLE_LINES) warn(`메타 블록: 정보 표는 ${MAX_TABLE_LINES}줄까지만 쓸 수 있어 나머지를 버렸습니다.`);
         tableLines.push({ text: "", line: current }); // 한 번만 경고하려고 개수만 센다
@@ -190,6 +201,7 @@ export function extractMeta(
       const m = KEY_LINE.exec(raw) as RegExpExecArray;
       const key = m[1].trim();
       const value = m[2].trim();
+      currentKey = key;
       section = null;
 
       if (key === "분류") {
@@ -225,7 +237,11 @@ export function extractMeta(
       warn("메타 블록: 들여쓰기에 탭을 쓸 수 없어 그 줄을 버렸습니다. 공백 2칸을 쓰세요.");
       continue;
     }
-    if (section !== "정보") continue; // 알 수 없는 이름 아래의 줄은 함께 버린다 (이미 경고했다)
+    if (section !== "정보") {
+      // 알 수 없는 이름 아래의 줄은 함께 버린다 (이름은 이미 경고했다). 분류, 이미지 아래의 줄은 정보가 끊긴 것일 수 있어 알린다.
+      if (section === "분류" || section === "이미지") warnMisplaced();
+      continue;
+    }
 
     const m = KEY_LINE.exec(raw.trim());
     if (!m) {

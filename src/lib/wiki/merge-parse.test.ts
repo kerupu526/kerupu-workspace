@@ -94,7 +94,7 @@ test("올바른 표가 아니면 버리고 경고한다 (--- 줄 없음)", () =>
 test("정보 밖의 표 줄은 버리고 경고한다", () => {
   const parsed = parseWiki(`---\n분류: 등장인물\n| a | b |\n|:---|:---|\n| 1 | 2 |\n정보:\n  제목: 켈프\n---\n\n## 개요\n글\n`);
   assert.equal(parsed.meta.infobox.table, undefined);
-  assert.ok(parsed.diagnostics.some((d) => d.message.includes("정보: 아래에 써야")));
+  assert.ok(parsed.diagnostics.some((d) => d.message.includes("정보 상자에 들어가지 않아")));
 });
 
 test("정보 표 안의 합칠 수 없는 칸도 경고 줄 번호가 원문 기준이다", () => {

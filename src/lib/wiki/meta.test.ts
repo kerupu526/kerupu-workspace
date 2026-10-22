@@ -155,3 +155,38 @@ test("코드 조각, 코드 블록, 이스케이프 안의 %% 는 주석이 아�
 test("CRLF 줄바꿈도 처리한다", () => {
   assert.equal(stripComments("앞\r\n%% 메모\r\n뒤"), "앞\n뒤");
 });
+
+test("정보: 사이에 이미지: 가 끼면 그 아래 줄을 버리고 한 번만 이유를 알린다", () => {
+  const md = [
+    "---",
+    "분류: 등장인물",
+    "정보:",
+    "이미지: /uploads/a.png",
+    "  제목: 테스트",
+    "  | 기본 정보 | < |",
+    "  |:---:|:---|",
+    "  | 이름 | 값 |",
+    "---",
+    "본문",
+  ].join("\n");
+  const { meta, warnings, diagnostics } = extract(md);
+  assert.equal(meta.infobox.title, undefined);
+  assert.equal(meta.infobox.table, undefined);
+  assert.equal(meta.infobox.image, "/uploads/a.png");
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /"이미지:" 아래에 들여쓴 줄은 정보 상자에 들어가지 않아/);
+  assert.equal(diagnostics[0].line, 4); // 처음 버린 줄 (제목: 줄, 0부터 센 4번째)
+});
+
+test("이미지: 를 정보 앞이나 뒤에 쓰면 정보 상자가 그대로 된다", () => {
+  for (const md of [
+    "---\n분류: 등장인물\n이미지: /uploads/a.png\n정보:\n  제목: 테스트\n  | a | b |\n  |:---|:---|\n  | 1 | 2 |\n---\n본문",
+    "---\n분류: 등장인물\n정보:\n  제목: 테스트\n  | a | b |\n  |:---|:---|\n  | 1 | 2 |\n이미지: /uploads/a.png\n---\n본문",
+  ]) {
+    const { meta, warnings } = extract(md);
+    assert.equal(meta.infobox.title, "테스트");
+    assert.ok(meta.infobox.table);
+    assert.equal(meta.infobox.image, "/uploads/a.png");
+    assert.equal(warnings.length, 0);
+  }
+});
