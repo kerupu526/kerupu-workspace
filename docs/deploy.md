@@ -39,12 +39,20 @@ docker compose logs -f web # 로그 보기
 
 ## 새 버전 올리기
 
+서버의 실제 프로젝트 폴더는 `/home/kerupu526/Projects/kerupu-workspace`다 (`/data/kerupu`에는 코드가 없고 백업·업로드 폴더만 있다). 아래 명령은 이 폴더에서 실행한다.
+
 ```bash
-cd kerupu-workspace
-git pull
+cd /home/kerupu526/Projects/kerupu-workspace
+df -h /                    # 루트 여유 확인. 1–2G 이하면 아래 빌드 캐시 정리부터
+docker builder prune -f    # 빌드 캐시 정리 (실행 중인 컨테이너에는 영향 없음)
+git pull --ff-only
 docker compose up -d --build
-docker image prune -f      # 안 쓰는 옛 이미지 정리
+docker image prune -f      # 안 쓰는 옛 이미지 정리 (이름 없는 것만)
+docker compose ps          # STATUS 가 healthy 인지 확인
 ```
+
+- `docker builder prune -f`는 배포 때마다 돌려도 된다. 빌드 캐시만 지우고, 다음 빌드가 조금 더 느려질 뿐이다.
+- 루트가 꽉 차면 `git pull`이 `index.lock` 쓰기에 실패하고 빌드도 깨진다. 이번에 한 번 겪었다.
 
 ## 되돌리기
 
@@ -168,7 +176,7 @@ docker compose up -d --build
 
 집 서버는 루트(`/`)가 작고(28GB), 별도 파티션 `/data`(78GB)가 넓다. Docker의 이미지와 빌드 캐시는 기본 위치(`/var/lib/docker`, 루트 쪽)에 쌓이므로 **루트 여유를 가끔 확인한다** (`df -h /`).
 
-우리 프로젝트의 영구 파일은 `/data/kerupu` 아래에 둔다 (컨테이너를 지우거나 다시 만들어도 남는다).
+프로젝트 소스 코드는 `/home/kerupu526/Projects/kerupu-workspace`에 있고, 영구 파일(백업, 업로드)은 `/data/kerupu` 아래에 둔다 (컨테이너를 지우거나 다시 만들어도 남는다).
 
 | 폴더 | 용도 | 권한 |
 |---|---|---|
