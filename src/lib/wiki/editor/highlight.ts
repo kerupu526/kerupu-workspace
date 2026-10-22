@@ -84,6 +84,10 @@ function build(view: EditorView): DecorationSet {
     if (inlineMarks) {
       const found: { start: number; end: number; name: string }[] = [];
       for (const m of text.matchAll(/%%.*?%%/g)) found.push({ start: m.index, end: m.index + m[0].length, name: "comment" });
+      // ||스포일러|| (속에 | 가 없고 비어 있지 않은 것)
+      for (const m of text.matchAll(/(?<!\\)\|\|(?!\s*\|\|)[^|]+?\|\|/g)) {
+        found.push({ start: m.index, end: m.index + m[0].length, name: "spoiler" });
+      }
       for (const m of text.matchAll(/\^\[/g)) found.push({ start: m.index, end: m.index + 2, name: "footnote" });
       for (const m of text.matchAll(/`[^`]*`/g)) found.push({ start: m.index, end: m.index + m[0].length, name: "inline-code" });
       found.sort((a, b) => a.start - b.start || a.end - b.end);

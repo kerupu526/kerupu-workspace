@@ -145,6 +145,7 @@ const editorTheme = EditorView.theme({
   ".cm-wiki-rule": { fontWeight: "var(--font-weight-bold)" },
   ".cm-wiki-table": { fontFamily: "monospace" },
   ".cm-wiki-footnote": { fontWeight: "var(--font-weight-bold)", textDecoration: "underline" },
+  ".cm-wiki-spoiler": { fontWeight: "var(--font-weight-bold)", backgroundColor: "var(--card-surface)", borderRadius: "4px" },
   ".cm-wiki-inline-code": { fontFamily: "monospace", backgroundColor: "var(--card-surface)" },
   // 자동완성 창
   ".cm-tooltip": {

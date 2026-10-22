@@ -18,7 +18,9 @@ import { extractFootnotes, restoreFootnoteText, splitFootnoteMarks, type RawFoot
  *   - # (1단계 제목)은 문서 제목 자리라서 본문에서 무시한다.
  *   - 제목 아래 블록은 그 제목의 본문이 된다. 첫 제목 전의 글은 버린다.
  *   - 블록: 문단, 순서 없는/있는 리스트(중첩 가능), 인용문(중첩 가능), 수평줄, 표, 이미지(문단 하나에 단독).
- *   - 인라인: **굵게**, *기울임*, ~~취소선~~, `코드`, [글](주소), ^[각주].
+ *   - 인라인: **굵게**, *기울임*, ~~취소선~~, `코드`, [글](주소), ^[각주], ||스포일러||.
+ *       - ||가릴 글|| 은 짝이 맞는 것만 스포일러가 된다 (속이 비거나 짝이 없으면 글자). 서식은 속에 들어갈 수 있다.
+ *         제목과 각주 안에서는 스포일러가 되지 않고 || 글자로 남는다. 표 셀 안에서는 \|\|글\|\| 로 쓴다.
  *   - 링크 주소는 /, #, https:// 로 시작하는 것만 허용한다. 나머지는 글자로만 남긴다.
  *   - 처리하지 않는 블록(코드 블록 등)은 버린다.
  *   - CSS 블록(:::style 선언 ::: 내용 :::)은 마크다운 파서가 모르는 문법이라서 파싱 전에 줄 단위로 먼저 떼어 낸다.
@@ -197,6 +199,64 @@ function splitFootnotes(text: string, ctx: Ctx): WikiInline[] {
   });
 }
 
+/* 글 조각 목록 끝에 조각을 붙인다. 글자끼리는 이어 붙인다. */
+function appendInline(list: WikiInline[], item: WikiInline) {
+  const last = list[list.length - 1];
+  if (typeof item === "string" && typeof last === "string") list[list.length - 1] = last + item;
+  else list.push(item);
+}
+
+/*
+ * ||가릴 글|| 을 스포일러로 묶는다. 같은 단계(형제)의 글에서 짝이 맞는 || 만 쓰고,
+ * 짝이 없거나 속이 비어 있으면(예: ||||, || ||) 글자 그대로 둔다. 굵게, 링크 같은 서식 조각은 속에 담긴다.
+ * 표 셀 안에서는 | 가 칸 나누기라서 \|\|글\|\| 로 쓴다 (마크다운이 \| 를 | 글자로 풀어 주므로 같은 규칙으로 묶인다).
+ */
+function groupSpoilers(items: WikiInline[]): WikiInline[] {
+  type Token = { mark: true } | { mark: false; item: WikiInline };
+  const tokens: Token[] = [];
+  for (const item of items) {
+    if (typeof item !== "string") {
+      tokens.push({ mark: false, item });
+      continue;
+    }
+    item.split("||").forEach((part, k) => {
+      if (k > 0) tokens.push({ mark: true });
+      if (part !== "") tokens.push({ mark: false, item: part });
+    });
+  }
+
+  const marks = tokens.flatMap((t, i) => (t.mark ? [i] : []));
+  if (marks.length < 2) return items;
+
+  // 앞에서부터 두 개씩 짝지은 || 중 속에 보이는 내용이 있는 것만 스포일러다 (여는 자리 -> 닫는 자리)
+  const pairs = new Map<number, number>();
+  for (let p = 0; p + 1 < marks.length; p += 2) {
+    const inside = tokens.slice(marks[p] + 1, marks[p + 1]);
+    const visible = inside.some((t) => !t.mark && (typeof t.item !== "string" || t.item.trim() !== ""));
+    if (visible) pairs.set(marks[p], marks[p + 1]);
+  }
+  if (pairs.size === 0) return items;
+
+  const out: WikiInline[] = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    if (!token.mark) {
+      appendInline(out, token.item);
+      continue;
+    }
+    const close = pairs.get(i);
+    if (close === undefined) {
+      appendInline(out, "||");
+      continue;
+    }
+    const inner: WikiInline[] = [];
+    for (const t of tokens.slice(i + 1, close)) if (!t.mark) appendInline(inner, t.item);
+    out.push({ spoiler: inner });
+    i = close;
+  }
+  return out;
+}
+
 /* 마크다운 조각들을 위키 인라인 조각으로 바꾼다 */
 function toInline(nodes: MdNode[] = [], ctx: Ctx): WikiInline[] {
   const out: WikiInline[] = [];
@@ -236,7 +296,7 @@ function toInline(nodes: MdNode[] = [], ctx: Ctx): WikiInline[] {
         else if (node.value) out.push(...splitFootnotes(node.value, ctx));
     }
   }
-  return out;
+  return groupSpoilers(out);
 }
 
 /* 리스트 항목: 첫 문단은 내용, 나머지 블록(중첩 리스트 등)은 nested */

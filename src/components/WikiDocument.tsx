@@ -4,6 +4,7 @@ import { Button, ButtonLink } from "./Button";
 import Card from "./Card";
 import Chip from "./Chip";
 import FootnoteRef from "./FootnoteRef";
+import Spoiler from "./Spoiler";
 import WikiInfobox, { type WikiInfoboxData } from "./WikiInfobox";
 import WikiToc, { type TocItem } from "./WikiToc";
 import styles from "./WikiDocument.module.css";
@@ -19,7 +20,9 @@ export type WikiInline =
   | { em: WikiInline[] }
   | { del: WikiInline[] }
   | { code: string }
-  | { link: { href: string; children: WikiInline[] } };
+  | { link: { href: string; children: WikiInline[] } }
+  /** 스포일러 ||글||: 가려져 있다가 누르면 보인다 */
+  | { spoiler: WikiInline[] };
 
 /* 블록: 문단, 리스트, 인용문, 수평줄 */
 export type WikiBlock =
@@ -120,6 +123,7 @@ function Inline({ part, footnotes }: { part: WikiInline; footnotes: string[] }) 
   if ("em" in part) return <em>{inner(part.em)}</em>;
   if ("del" in part) return <del>{inner(part.del)}</del>;
   if ("code" in part) return <code className={styles.code}>{part.code}</code>;
+  if ("spoiler" in part) return <Spoiler>{inner(part.spoiler)}</Spoiler>;
   // 링크는 파서가 안전한 주소만 넘긴다 (/, #, https:// 로 시작)
   const { href, children } = part.link;
   const external = /^https?:\/\//.test(href);
