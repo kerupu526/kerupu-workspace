@@ -1,0 +1,43 @@
+.card {
+  --card-h: auto;
+  width: var(--card-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+  padding: var(--space-48);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-heading-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.slug {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--text-caption-size);
+}
+
+.message {
+  margin: 0;
+  min-height: 1lh;
+  font-size: var(--text-caption-size);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-12);
+}

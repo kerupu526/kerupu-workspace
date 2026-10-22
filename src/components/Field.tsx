@@ -11,6 +11,12 @@ interface FieldProps {
   hideLabel?: boolean;
   /** 모달이 열릴 때 처음 포커스를 받는다 */
   autoFocus?: boolean;
+  /** 폼으로 보내는 이름 (기본은 id) */
+  name?: string;
+  /** 처음 채워 둘 값 */
+  defaultValue?: string;
+  required?: boolean;
+  maxLength?: number;
 }
 
 /* 라벨과 입력창 한 쌍. 입력창 테두리는 card-border 가 아니라 main-logo 3px. */
@@ -22,6 +28,10 @@ export default function Field({
   placeholder,
   hideLabel = false,
   autoFocus,
+  name = id,
+  defaultValue,
+  required,
+  maxLength,
 }: FieldProps) {
   const multiline = type === "textarea";
   return (
@@ -33,19 +43,25 @@ export default function Field({
         <textarea
           className={styles.textarea}
           id={id}
-          name={id}
+          name={name}
           placeholder={placeholder}
           autoFocus={autoFocus}
+          defaultValue={defaultValue}
+          required={required}
+          maxLength={maxLength}
         />
       ) : (
         <input
           className={styles.input}
           id={id}
-          name={id}
+          name={name}
           type={type}
           autoComplete={autoComplete}
           placeholder={placeholder}
           autoFocus={autoFocus}
+          defaultValue={defaultValue}
+          required={required}
+          maxLength={maxLength}
         />
       )}
     </div>

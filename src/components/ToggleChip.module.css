@@ -13,6 +13,7 @@
   font-size: var(--text-label-size);
   font-weight: var(--font-weight-bold);
   white-space: nowrap;
+  text-decoration: none;
   cursor: pointer;
   transition: background-color var(--motion-fast) var(--ease-out);
 }
