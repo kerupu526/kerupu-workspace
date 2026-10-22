@@ -161,6 +161,41 @@ SUPABASE_SECRET_KEY=...
 
 Cloudflare 쪽(Public Hostname `dev` → `HTTP localhost:80`, Access 정책)은 대시보드에서 설정한다.
 
+## 자동 배포 (cron)
+
+서버가 1분마다 GitHub의 브랜치를 확인하고, 새 커밋이 있으면 스스로 올린다. 서버로 들어오는 연결도, GitHub에 넣는 비밀값도 없다(저장소가 public이라 서버에서 코드를 돌리는 GitHub Actions 러너는 쓰지 않는다). `deploy/auto-deploy.sh`가 하는 일:
+
+1. `git fetch`로 새 커밋을 확인한다. 없으면 아무것도 하지 않는다.
+2. 있으면 `git merge --ff-only`로 받고 `docker compose up -d --build`로 올린다. 루트 여유가 3GB 아래면 빌드 캐시를 먼저 정리한다.
+3. 컨테이너가 healthy가 될 때까지 기다린다.
+4. 빌드가 깨지면 실행 중이던 컨테이너를 그대로 두고, healthy가 되지 않으면 이전 커밋으로 되돌려 다시 올린다. 실패한 커밋은 다시 시도하지 않고, 새 커밋이 오면 다시 시도한다.
+5. 서버 폴더에 커밋하지 않은 변경이 있거나 다른 브랜치로 바뀌어 있으면 아무것도 하지 않고 로그만 남긴다.
+
+DB 마이그레이션은 적용하지 않는다(DB 비밀번호를 쓰지 않기 위해서). 그래서 운영에는 `--hold-on-migrations`를 붙인다. 새 커밋에 `supabase/migrations` 변경이 있으면 올리지 않고 기다리며, DB에 적용한 뒤 `--force`로 한 번 직접 실행한다.
+
+설치 (서버에서, `sudo` 필요 없음. 사용자가 `docker` 그룹에 있어야 한다):
+
+```bash
+crontab -e
+```
+
+```cron
+* * * * * /home/kerupu526/Projects/kerupu-workspace-dev/deploy/auto-deploy.sh /home/kerupu526/Projects/kerupu-workspace-dev dev 2>&1 | logger -t kerupu-deploy-dev
+* * * * * /home/kerupu526/Projects/kerupu-workspace-dev/deploy/auto-deploy.sh /home/kerupu526/Projects/kerupu-workspace main --hold-on-migrations 2>&1 | logger -t kerupu-deploy-prod
+```
+
+- 운영 줄은 선택이다. 자동으로 올리고 싶지 않으면 넣지 않는다. 스크립트가 `main`에 들어간 뒤에는 운영 줄의 스크립트 경로도 운영 폴더의 것으로 바꿔도 된다.
+- 폴더의 `origin`이 SSH 주소(`git@github.com:...`)이면 cron에서 키를 못 찾을 수 있다. HTTPS 주소를 쓴다 (`git remote set-url origin https://github.com/kerupu526/kerupu-workspace.git`).
+
+로그와 수동 실행:
+
+```bash
+journalctl -t kerupu-deploy-dev -n 30          # 최근 로그 (운영은 kerupu-deploy-prod)
+~/Projects/kerupu-workspace-dev/deploy/auto-deploy.sh ~/Projects/kerupu-workspace main --hold-on-migrations --force   # 보류나 실패 표시를 무시하고 지금 올리기
+```
+
+멈추려면 `crontab -e`에서 해당 줄을 지우거나 앞에 `#`을 붙인다. 이미 돌고 있는 배포는 끝까지 간다.
+
 ## 환경 변수와 비밀값 (Supabase)
 
 값 없는 견본이 `.env.example`에 있다. **실제 값은 서버의 `.env` 파일에만 둔다.**

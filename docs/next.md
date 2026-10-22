@@ -23,4 +23,4 @@
 
 ## 서버
 - 집 서버 디스크는 루트가 좁음 (`/data/kerupu` 사용 중). 자세한 건 `docs/deploy.md`.
-- 배포: 서버에서 `git pull` 후 `docker compose up -d --build`.
+- 배포: 서버에서 `git pull` 후 `docker compose up -d --build`. 자동 배포는 `deploy/auto-deploy.sh` + cron (`docs/deploy.md`의 "자동 배포").
