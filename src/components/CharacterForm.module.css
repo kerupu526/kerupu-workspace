@@ -1,6 +1,8 @@
+/* 폼 카드는 기본 카드(450px)보다 넓게 둔다. 버튼 두 개와 안내 글이 줄바꿈 없이 들어가야 한다. */
 .card {
+  --card-w: calc(640 * var(--px));
   --card-h: auto;
-  width: var(--card-width);
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   gap: var(--space-24);
@@ -36,8 +38,10 @@
   font-size: var(--text-caption-size);
 }
 
+/* 좁아서 못 들어가면 왼쪽으로 삐져나오지 않고 아래 줄로 내려간다 */
 .actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-12);
 }
