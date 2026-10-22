@@ -37,44 +37,6 @@
   margin-top: auto;
 }
 
-/* 로그인한 뒤의 계정 카드: 가운데에 하나만, 내용 높이만큼 */
-.single {
-  display: flex;
-  justify-content: center;
-}
-
-/* 내 계정 카드는 인사말과 닉네임 폼이 줄바꿈 없이 들어가도록 기본 카드보다 넓게 둔다 */
-.account {
-  --card-h: auto;
-  --card-w: calc(640 * var(--px));
-  max-width: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-16);
-  padding: var(--space-48);
-}
-
-.accountName {
-  margin: 0;
-  font-size: var(--text-heading-size);
-  font-weight: var(--font-weight-bold);
-  /* 한글은 글자 중간이 아니라 낱말 사이에서 줄을 바꾼다 ("환영합니 / 다." 방지) */
-  word-break: keep-all;
-  overflow-wrap: anywhere;
-}
-
-.accountEmail {
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-size: var(--text-caption-size);
-}
-
-.logout {
-  margin-top: var(--space-24);
-  width: 100%;
-}
-
 .nicknameForm {
   display: flex;
   flex-direction: column;

@@ -1,0 +1,159 @@
+.layout {
+  display: grid;
+  grid-template-columns: var(--card-width) minmax(0, 1fr);
+  column-gap: var(--space-48);
+  row-gap: var(--space-24);
+  align-items: start;
+}
+
+/* 왼쪽 계정 카드: 높이는 내용만큼 */
+.profile {
+  --card-h: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: var(--space-48);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-heading-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.name {
+  margin: 0;
+  font-size: var(--text-heading-size);
+  font-weight: var(--font-weight-bold);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--text-caption-size);
+  overflow-wrap: anywhere;
+}
+
+.logout {
+  width: 100%;
+  margin-top: var(--space-16);
+}
+
+/* 오른쪽: 숫자 요약과 목록 */
+.activity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-24);
+  margin: 0;
+}
+
+/* 카드는 기본 폭(450px)이 고정이라, 오른쪽 칸을 가득 채우려면 폭을 100%로 바꾼다 */
+.stat {
+  --card-w: 100%;
+  --card-h: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding: var(--space-24) var(--space-32);
+}
+
+.stat dt {
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.stat dd {
+  margin: 0;
+  font-size: var(--text-title-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.panel {
+  --card-w: 100%;
+  --card-h: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: var(--space-32) var(--space-48);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-24);
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: var(--text-heading-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) auto;
+  align-items: baseline;
+  gap: var(--space-24);
+  padding: var(--space-12) 0;
+  border-top: var(--border-width) solid var(--card-border);
+  font-size: var(--text-body-size);
+}
+
+.row:first-child {
+  border-top: 0;
+}
+
+.rowLink {
+  color: inherit;
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.rowWork {
+  overflow-wrap: anywhere;
+}
+
+.rowTime {
+  font-size: var(--text-caption-size);
+  white-space: nowrap;
+}
+
+/* 시각만 있는 목록(최근에 저장한 문서)은 두 칸이다 */
+.row:not(:has(.rowWork)) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.empty,
+.note {
+  margin: 0;
+  font-size: var(--text-body-size);
+}
+
+.note {
+  font-size: var(--text-caption-size);
+}
