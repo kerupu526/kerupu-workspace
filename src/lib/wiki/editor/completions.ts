@@ -28,7 +28,7 @@ const LINE_START: Completion[] = [
     type: "keyword",
   }),
   snippetCompletion("## + ${접힌 문단 제목}", { label: "## +", detail: "처음부터 접힌 문단", type: "keyword" }),
-  snippetCompletion("| ${항목} | ${내용} |\n|:---|:---|\n| ${} | ${} |", { label: "|", detail: "표", type: "keyword" }),
+  snippetCompletion("| ${항목} | ${내용} |\n|:---|:---|\n| ${} | ${} |", { label: "|", detail: "표 (칸 합치기는 < 와 ^)", type: "keyword" }),
   snippetCompletion("![${설명}](/uploads/${파일.png})", { label: "![", detail: "이미지", type: "keyword" }),
   snippetCompletion("> ${인용할 내용}", { label: ">", detail: "인용문", type: "keyword" }),
   snippetCompletion("- ${항목}", { label: "-", detail: "목록", type: "keyword" }),
@@ -48,11 +48,18 @@ const META_KEYS: Completion[] = [
   { label: "이미지", detail: "/uploads/ 파일", apply: "이미지: /uploads/", type: "property" },
 ];
 
-const INFO_KEYS: Completion[] = ["제목", "작품", "분류", "첫 등장", "출처"].map((name) => ({
-  label: name,
-  apply: `${name}: `,
-  type: "property",
-}));
+const INFO_KEYS: Completion[] = [
+  ...["제목", "작품", "분류", "첫 등장", "출처"].map((name): Completion => ({
+    label: name,
+    apply: `${name}: `,
+    type: "property",
+  })),
+  snippetCompletion("| ${항목} | < |\n  |:---|:---|\n  | ${이름} | ${값} |", {
+    label: "|",
+    detail: "정보 표 (칸 합치기는 < 와 ^)",
+    type: "keyword",
+  }),
+];
 
 const LINK_TARGETS: Completion[] = [
   { label: "/dictionary/", detail: "사이트 안의 문서", type: "text" },

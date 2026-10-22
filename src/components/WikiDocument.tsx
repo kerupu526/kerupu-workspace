@@ -3,9 +3,9 @@ import Link from "next/link";
 import { Button, ButtonLink } from "./Button";
 import Card from "./Card";
 import Chip from "./Chip";
-import FootnoteRef from "./FootnoteRef";
-import Spoiler from "./Spoiler";
+import { Inline } from "./WikiInline";
 import WikiInfobox, { type WikiInfoboxData } from "./WikiInfobox";
+import WikiTable from "./WikiTable";
 import WikiToc, { type TocItem } from "./WikiToc";
 import styles from "./WikiDocument.module.css";
 
@@ -30,7 +30,14 @@ export type WikiBlock =
   | { type: "list"; ordered: boolean; items: WikiListItem[] }
   | { type: "quote"; children: WikiBlock[] }
   | { type: "hr" }
-  | { type: "table"; align: ("left" | "center" | "right" | null)[]; head: WikiInline[][]; rows: WikiInline[][][] }
+  | {
+      type: "table";
+      align: ("left" | "center" | "right" | null)[];
+      head: WikiInline[][];
+      rows: WikiInline[][][];
+      /** 칸 합치기가 있을 때만: 머리글 줄을 첫 줄로 한 칸별 합치기 정보 (합쳐서 안 그리는 칸은 skip) */
+      merges?: WikiCellMerge[][];
+    }
   | { type: "image"; src: string; alt: string }
   /** CSS 블록: 허용 목록을 통과한 선언만 담긴다 (파서에서 걸러진다). 이름은 camelCase. */
   | { type: "style"; style: Record<string, string>; children: WikiBlock[] }
@@ -38,6 +45,13 @@ export type WikiBlock =
   | { type: "toc" }
   /** 접기 블록: 제목 줄을 누르면 안의 블록이 펼쳐진다. 처음에는 접혀 있다. title 이 비어 있으면 "더 보기". */
   | { type: "fold"; title: string; children: WikiBlock[] };
+
+/** 표 칸 하나의 합치기: 왼쪽 위 칸만 colSpan, rowSpan 을 갖고, 합쳐진 나머지 칸은 skip 이다 */
+export interface WikiCellMerge {
+  colSpan?: number;
+  rowSpan?: number;
+  skip?: boolean;
+}
 
 export interface WikiListItem {
   content: WikiInline[];
@@ -111,33 +125,6 @@ function toTocItems(items: Numbered[]): TocItem[] {
   }));
 }
 
-function Inline({ part, footnotes }: { part: WikiInline; footnotes: string[] }) {
-  if (typeof part === "string") return <>{part}</>;
-  if ("footnote" in part) {
-    const n = part.footnote;
-    return <FootnoteRef n={n} text={footnotes[n - 1] ?? ""} />;
-  }
-  const inner = (list: WikiInline[]) =>
-    list.map((p, i) => <Inline key={i} part={p} footnotes={footnotes} />);
-  if ("strong" in part) return <strong>{inner(part.strong)}</strong>;
-  if ("em" in part) return <em>{inner(part.em)}</em>;
-  if ("del" in part) return <del>{inner(part.del)}</del>;
-  if ("code" in part) return <code className={styles.code}>{part.code}</code>;
-  if ("spoiler" in part) return <Spoiler>{inner(part.spoiler)}</Spoiler>;
-  // 링크는 파서가 안전한 주소만 넘긴다 (/, #, https:// 로 시작)
-  const { href, children } = part.link;
-  const external = /^https?:\/\//.test(href);
-  return (
-    <a
-      href={href}
-      className={styles.link}
-      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-    >
-      {inner(children)}
-    </a>
-  );
-}
-
 function Blocks({ blocks, footnotes, toc }: { blocks: WikiBlock[]; footnotes: string[]; toc: TocItem[] }) {
   return (
     <>
@@ -175,37 +162,7 @@ function Blocks({ blocks, footnotes, toc }: { blocks: WikiBlock[]; footnotes: st
           case "hr":
             return <hr key={i} className={styles.hr} />;
           case "table":
-            // 표는 가로로 넘치면 표만 스크롤한다 (페이지는 넘치지 않는다)
-            return (
-              <div key={i} className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      {block.head.map((cell, j) => (
-                        <th key={j} scope="col" style={{ textAlign: block.align[j] ?? undefined }}>
-                          {cell.map((part, k) => (
-                            <Inline key={k} part={part} footnotes={footnotes} />
-                          ))}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {block.rows.map((row, j) => (
-                      <tr key={j}>
-                        {row.map((cell, k) => (
-                          <td key={k} style={{ textAlign: block.align[k] ?? undefined }}>
-                            {cell.map((part, m) => (
-                              <Inline key={m} part={part} footnotes={footnotes} />
-                            ))}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            );
+            return <WikiTable key={i} block={block} footnotes={footnotes} />;
           case "toc":
             return <WikiToc key={i} items={toc} />;
           case "style":

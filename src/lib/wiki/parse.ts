@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import type { WikiBlock, WikiInline, WikiListItem, WikiSection } from "@/components/WikiDocument";
 import { sanitizeStyle, toReactStyle } from "./css.ts";
 import { extractMeta, stripCommentsMapped, type WikiMeta } from "./meta.ts";
+import { computeMerges, type CellMark } from "./table-merge.ts";
 import { extractFootnotes, restoreFootnoteText, splitFootnoteMarks, type RawFootnote } from "./footnote.ts";
 
 /*
@@ -94,6 +95,11 @@ export interface Diagnostic {
   line?: number;
 }
 
+/* 메타 블록 결과. 정보 상자의 표(table)는 칸 서식과 합치기까지 풀어서 표 블록으로 담는다. */
+export type ParsedMeta = Omit<WikiMeta, "infobox"> & {
+  infobox: Omit<WikiMeta["infobox"], "table"> & { table?: Extract<WikiBlock, { type: "table" }> };
+};
+
 export interface ParsedWiki {
   sections: WikiSection[];
   footnotes: string[];
@@ -102,7 +108,7 @@ export interface ParsedWiki {
   /** warnings 와 같은 내용에 줄 번호를 붙인 것 (같은 순서) */
   diagnostics: Diagnostic[];
   /** 메타 블록의 분류와 정보 상자 */
-  meta: WikiMeta;
+  meta: ParsedMeta;
   /** 첫 제목 전에 쓴 [toc] (있으면 toc 블록 하나). 문서 본문 맨 앞에 놓는다. */
   lead: WikiBlock[];
 }
@@ -327,7 +333,24 @@ function toTable(node: MdNode, ctx: Ctx): WikiBlock | null {
     return a === "left" || a === "center" || a === "right" ? a : null;
   });
   const [head, ...body] = cells;
-  return { type: "table", align, head: head ?? [], rows: body };
+  const table: Extract<WikiBlock, { type: "table" }> = { type: "table", align, head: head ?? [], rows: body };
+
+  // 칸 합치기: 내용이 `<` 뿐인 칸은 왼쪽과, `^` 뿐인 칸은 위쪽과 합친다 (글자 그대로 쓰려면 `<` 처럼 코드로 쓴다)
+  const marks: CellMark[][] = rows.map((r) =>
+    Array.from({ length: cols }, (_, c) => {
+      const kids = r.children?.[c]?.children ?? [];
+      const only = kids.length === 1 && kids[0].type === "text" ? kids[0].value?.trim() : undefined;
+      return only === "<" ? "L" : only === "^" ? "U" : "n";
+    }),
+  );
+  if (marks.some((row) => row.some((m) => m !== "n"))) {
+    const { merges, reverted } = computeMerges(marks);
+    if (reverted.length > 0) {
+      warnOnce(ctx, "merge", "표: 합칠 수 없는 < 또는 ^ 는 글자 그대로 남겼습니다 (합친 영역은 빈틈없는 직사각형이어야 하고, 머리글 줄과는 합칠 수 없습니다).");
+    }
+    if (merges) table.merges = merges;
+  }
+  return table;
 }
 
 /* 블록 노드들을 위키 블록으로 바꾼다. 처리하지 않는 블록은 버린다. */
@@ -427,6 +450,37 @@ function warnDropped(node: MdNode, ctx: Ctx) {
   else if (node.type === "footnoteDefinition") {
     warnOnce(ctx, "footnoteDefinition", "[^1]: 형식의 각주는 쓸 수 없어 버렸습니다. 본문에 ^[내용] 으로 씁니다.");
   }
+}
+
+/*
+ * 정보 상자의 표 (메타 블록의 정보 아래 | 줄들)를 표 블록으로 바꾼다. 줄 번호는 lines(원문 줄, 0부터)로 되돌린다.
+ * 첫 표만 쓴다. 머리글 줄과 | --- | 줄이 있는 올바른 표가 아니면 버리고 경고한다.
+ * 각주는 본문에서만 만들어서, 칸 안의 ^[ ] 는 글자로 남는다.
+ */
+function toInfoboxTable(table: { source: string; lines: number[] }, originalLines: number[], ctx: Ctx) {
+  const outerMap = ctx.lineMap;
+  const outerLine = ctx.line;
+  ctx.lineMap = originalLines;
+  ctx.line = originalLines[0] === undefined ? undefined : originalLines[0] + 1;
+
+  const tree = processor.parse(table.source) as MdNode;
+  const nodes = tree.children ?? [];
+  const first = nodes.find((n) => n.type === "table");
+  let result: Extract<WikiBlock, { type: "table" }> | undefined;
+  if (!first) {
+    warn(ctx, "메타 블록: 정보의 표는 머리글 줄과 | --- | 줄이 있어야 하는데 올바른 표가 아니라 버렸습니다.");
+  } else {
+    ctx.line = lineOf(first, ctx) ?? ctx.line;
+    const block = toTable(first, ctx);
+    if (block && block.type === "table") result = block;
+    if (nodes.filter((n) => n.type === "table").length > 1 || nodes.some((n) => n.type !== "table")) {
+      warn(ctx, "메타 블록: 정보 아래의 표 줄은 하나의 표로 이어서 써야 합니다. 첫 번째 표만 쓰고 나머지는 버렸습니다.");
+    }
+  }
+
+  ctx.lineMap = outerMap;
+  ctx.line = outerLine;
+  return result;
 }
 
 /*
@@ -787,7 +841,15 @@ export function parseWiki(markdown: string): ParsedWiki {
     }
   }
 
-  return { sections: root, footnotes, warnings: ctx.warnings, diagnostics: ctx.diagnostics, meta: withoutMeta.meta, lead };
+  // 정보 상자의 표는 본문과 같은 방식으로 칸 서식과 합치기를 푼다
+  const { table: rawInfoTable, ...infoboxRest } = withoutMeta.meta.infobox;
+  const meta: ParsedMeta = { ...withoutMeta.meta, infobox: infoboxRest };
+  if (rawInfoTable) {
+    const infoTable = toInfoboxTable(rawInfoTable, rawInfoTable.lines.map((i) => stripped.lineMap[i]), ctx);
+    if (infoTable) meta.infobox.table = infoTable;
+  }
+
+  return { sections: root, footnotes, warnings: ctx.warnings, diagnostics: ctx.diagnostics, meta, lead };
 }
 
 /* 문단 구조만 필요할 때 */

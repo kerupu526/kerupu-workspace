@@ -19,7 +19,15 @@
  *     나머지는 행이 된다. 같은 이름이 두 번 나오면 뒤의 것을 쓴다.
  *   - 값은 그냥 글자다 (굵게, 링크 같은 문법은 풀지 않는다).
  *
- * 제한 (설계 문서에 없어서 여기서 정했다): 분류 20개(각 50자), 정보 30행(이름 30자, 값 200자).
+ * 정보 아래에는 `이름: 값` 줄 대신(또는 함께) 표를 쓸 수 있다. `|` 로 시작하는 줄들(들여쓰지 않아도 된다)이 하나의 표가 되고,
+ * 이 파일은 그 줄들을 그대로 모아서 돌려준다 (칸 안의 서식과 합치기는 parse.ts 가 푼다).
+ *   정보:
+ *     제목: 캐릭터 이름
+ *     | 기본 정보 | < |
+ *     |:---|:---|
+ *     | 이름 | 켈프 |
+ *
+ * 제한 (설계 문서에 없어서 여기서 정했다): 분류 20개(각 50자), 정보 30행(이름 30자, 값 200자), 정보 표 302줄.
  *
  * 주석
  *   - 줄 맨 앞이 `%%` 이면 그 줄 전체가 주석이다.
@@ -35,6 +43,8 @@ export interface WikiMeta {
     rows: { label: string; value: string }[];
     /** 사이트에 올린 이미지 주소 (안전한 것만) */
     image?: string;
+    /** 정보 아래에 쓴 표의 줄들. lines 는 각 줄이 이 함수에 넘긴 글의 몇 번째 줄(0부터)이었는지 */
+    table?: { source: string; lines: number[] };
   };
 }
 
@@ -43,6 +53,7 @@ const MAX_CATEGORY_LENGTH = 50;
 export const MAX_INFO_ROWS = 30;
 const MAX_LABEL_LENGTH = 30;
 const MAX_VALUE_LENGTH = 200;
+export const MAX_TABLE_LINES = 302;
 
 /** 경고와 그 줄 (입력 글 안에서 0부터 센다) */
 export interface MetaDiagnostic {
@@ -153,16 +164,27 @@ export function extractMeta(
   const looksLikeMeta =
     content.length > 0 &&
     KEY_LINE.test(content[0]) &&
-    content.every((l) => /^\s/.test(l) || KEY_LINE.test(l));
+    content.every((l) => /^\s/.test(l) || KEY_LINE.test(l) || /^\|/.test(l));
   if (!looksLikeMeta) return { text: markdown, meta, warnings, diagnostics, removedLines: 0 };
 
   let section: "분류" | "정보" | "이미지" | null = null;
   const rows = new Map<string, string>();
+  const tableLines: { text: string; line: number }[] = [];
 
   for (const [offset, raw] of body.entries()) {
     current = start + 1 + offset;
     if (raw.trim() === "") continue;
     const indented = /^\s/.test(raw);
+
+    // 정보 아래의 표 줄 (들여쓰지 않아도 받는다)
+    if (/^\s*\|/.test(raw)) {
+      if (section !== "정보") warn("메타 블록: 표는 정보: 아래에 써야 해서 그 줄을 버렸습니다.");
+      else if (tableLines.length >= MAX_TABLE_LINES) {
+        if (tableLines.length === MAX_TABLE_LINES) warn(`메타 블록: 정보 표는 ${MAX_TABLE_LINES}줄까지만 쓸 수 있어 나머지를 버렸습니다.`);
+        tableLines.push({ text: "", line: current }); // 한 번만 경고하려고 개수만 센다
+      } else tableLines.push({ text: raw.trim(), line: current });
+      continue;
+    }
 
     if (!indented) {
       const m = KEY_LINE.exec(raw) as RegExpExecArray;
@@ -229,5 +251,7 @@ export function extractMeta(
   }
 
   meta.infobox.rows = [...rows].map(([label, value]) => ({ label, value }));
+  const kept = tableLines.filter((l) => l.text !== "");
+  if (kept.length > 0) meta.infobox.table = { source: kept.map((l) => l.text).join("\n"), lines: kept.map((l) => l.line) };
   return { text: lines.slice(end + 1).join("\n"), meta, warnings, diagnostics, removedLines: end + 1 };
 }

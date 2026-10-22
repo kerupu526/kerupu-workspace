@@ -68,3 +68,14 @@
   font-size: var(--text-caption-size);
   font-weight: var(--font-weight-regular);
 }
+
+/* 정보 아래에 쓴 표: 상자 안에서 폭을 채우고, 위의 줄과 선으로 구분한다 */
+.box .extraTable {
+  margin: 0;
+  border-top: var(--border-width) solid var(--card-border);
+}
+
+.box .extraTable table th,
+.box .extraTable table td {
+  padding: var(--space-8) var(--space-16);
+}

@@ -22,6 +22,7 @@ export function buildDocumentProps(parsed: ParsedWiki, slug: string): WikiDocume
       imageLabel: "캐릭터 이미지",
       image: meta.infobox.image,
       rows: meta.infobox.rows,
+      table: meta.infobox.table,
     },
     lead,
     sections,
