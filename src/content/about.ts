@@ -15,7 +15,7 @@ export const ABOUT_INTRO = {
     "用意したものはあまり多くありませんが、ゆっくり見ていってくださいね！",
   ],
   en: [
-    "Nice to meet you! I'm Kerupu!",
+    "Nice to meet you! I'm Kelp!",
     "Some of you may already know me, and some of you may be here out of curiosity about this site. Everyone is welcome! 🤗",
     "I don't have much prepared, but please feel free to look around and make yourself at home!",
   ],
