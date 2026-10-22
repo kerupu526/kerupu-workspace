@@ -4,6 +4,7 @@ import Card from "@/components/Card";
 import CharacterCard from "@/components/CharacterCard";
 import PageFrame from "@/components/PageFrame";
 import SearchField from "@/components/SearchField";
+import ServiceTabs from "@/components/ServiceTabs";
 import ToggleChip from "@/components/ToggleChip";
 import { CHARACTER_LIST_LIMIT, listCharacters, listWorks, type CharacterSort } from "@/lib/wiki/store";
 import styles from "./page.module.css";
@@ -53,7 +54,9 @@ export default async function DictionaryPage({ searchParams }: { searchParams: P
 
   return (
     <PageFrame className={styles.layout}>
+      {/* 화면에는 탭의 "캐릭터 사전"이 보이므로 페이지 제목은 보조기기용으로만 둔다 */}
       <h1 className="visually-hidden">캐릭터 사전</h1>
+      <ServiceTabs current="dictionary" className={styles.tabs} />
 
       <Card as="section" className={styles.filters} aria-labelledby="dict-filter-title">
         <h2 className={styles.filterTitle} id="dict-filter-title">

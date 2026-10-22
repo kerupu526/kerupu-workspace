@@ -15,7 +15,13 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/about", label: "소개", icon: "about", activeBases: ["/about"] },
-  { href: "/dictionary", label: "캐릭터 사전", icon: "service", activeBases: ["/dictionary"] },
+  {
+    href: "/board",
+    label: "서비스",
+    icon: "service",
+    activeBases: ["/board", "/playlist", "/dictionary"],
+  },
+  { href: "/my-board", label: "개인 게시판", icon: "note", activeBases: ["/my-board"] },
   { href: "/login", label: "로그인", icon: "login", activeBases: ["/login"] },
 ];
 

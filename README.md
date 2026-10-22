@@ -40,13 +40,16 @@ src/
     page.tsx         /
     about/           /about
     login/           /login
-    dictionary/      /dictionary, /dictionary/new, /dictionary/[slug]
+    board/           /board
+    my-board/        /my-board
+    playlist/        /playlist
+    dictionary/      /dictionary, /dictionary/[slug]
     not-found.tsx    404
   components/      Header, HeaderNav, Footer, PixelIcon          공통 틀
                    Card, Button, Chip, CircleFrame, PageFrame    기본 부품
                    Field, NoopForm, SearchField                  폼 (제출 동작 없음)
                    Modal, WriteDialog, PostList                  모달 (<dialog> 사용)
-                   ProfileCard, AuthForms, CharacterForm,        화면별 부품
+                   ServiceTabs, ProfileCard, AuthForms,          화면별 부품
                    PostCard, NoticeCard, TrackRow, PlayerCard,
                    CharacterCard, ToggleChip
                    WikiDocument, WikiToc, WikiInfobox,           위키 문서
