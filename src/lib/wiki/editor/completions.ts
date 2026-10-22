@@ -4,7 +4,7 @@ import { detectContext } from "./context.ts";
 
 /*
  * 위키 편집기의 자동완성. 어떤 제안을 할지는 context.ts 가 알아낸 커서 자리로 정한다.
- *   줄 맨 앞        문법 조각 (제목, 목차, CSS 블록, 표, 이미지, 인용문, 목록, 수평줄, 주석, 메타 블록)
+ *   줄 맨 앞        문법 조각 (제목, 목차, CSS 블록, 접기, 표, 이미지, 인용문, 목록, 수평줄, 주석, 메타 블록)
  *   :::style 선언   css.ts 의 허용 속성 이름, 그 속성에 쓸 수 있는 값 (허용되지 않은 속성은 제안하지 않는다)
  *   메타 블록       분류, 정보, 이미지 / 정보 아래의 이름
  *   ^ 뒤            각주 ^[ ]
@@ -22,6 +22,12 @@ const LINE_START: Completion[] = [
     detail: "CSS 블록",
     type: "keyword",
   }),
+  snippetCompletion("+++ ${접기 제목}\n${숨길 내용}\n+++", {
+    label: "+++",
+    detail: "접기 (누르면 펼쳐짐, 스포일러용)",
+    type: "keyword",
+  }),
+  snippetCompletion("## + ${접힌 문단 제목}", { label: "## +", detail: "처음부터 접힌 문단", type: "keyword" }),
   snippetCompletion("| ${항목} | ${내용} |\n|:---|:---|\n| ${} | ${} |", { label: "|", detail: "표", type: "keyword" }),
   snippetCompletion("![${설명}](/uploads/${파일.png})", { label: "![", detail: "이미지", type: "keyword" }),
   snippetCompletion("> ${인용할 내용}", { label: ">", detail: "인용문", type: "keyword" }),

@@ -11,7 +11,7 @@ import { extractFootnotes, restoreFootnoteText, splitFootnoteMarks, type RawFoot
  * 메타 블록, 목차, 주석).
  * 설계는 docs/wiki-syntax.md 참고.
  *
- * 처리 순서: 주석 지우기 → 메타 블록 → 각주 → CSS 블록 떼어 내기 → 마크다운 파싱 → 블록 변환
+ * 처리 순서: 주석 지우기 → 메타 블록 → 각주 → CSS 블록 떼어 내기 → 접기 블록 떼어 내기 → 마크다운 파싱 → 블록 변환
  *
  * 규칙
  *   - ## 부터 문단 제목. ##이 1단계, ###이 2단계 ... ######이 5단계.
@@ -29,6 +29,14 @@ import { extractFootnotes, restoreFootnoteText, splitFootnoteMarks, type RawFoot
  *       - 블록 안에 :::style 이 또 있으면 중첩으로 보지 않고 글자로 둔다. 안쪽의 ::: 가 바깥 블록을 닫는다.
  *       - 블록 안의 제목(##)은 쓸 수 없다. 제목은 버리고 warnings 에 남긴다 (문단 구조는 블록 밖에서만 만든다).
  *       - 블록은 어떤 문단 아래에 있어야 문서에 남는다 (첫 제목 전의 글은 버린다는 규칙 그대로).
+ *   - 접기 블록(+++ 제목 / 내용 / +++)도 CSS 블록처럼 파싱 전에 줄 단위로 떼어 내고, 그 자리에 자리표시 문단을 남긴다.
+ *       - 여는 줄은 +++ 로 시작하고 (세 개 이상) 뒤에 제목을 쓴다. 닫는 줄은 같거나 더 많은 + 만 있는 줄이다.
+ *         안쪽에 접기를 또 넣으려면 바깥을 + 더 많이(예: ++++) 쓴다 (코드 블록의 ``` 와 같은 규칙).
+ *       - 제목은 글자만 쓴다 (서식 문법은 풀지 않는다). 비우면 "더 보기". 처음에는 접힌 상태다.
+ *       - 닫지 않은 블록과 코드 블록 안의 +++ 는 그냥 글자로 둔다.
+ *       - 안쪽에는 제목(##)을 쓸 수 없다 (버리고 warnings 에 남긴다). 접기는 3단계까지 중첩할 수 있다.
+ *       - CSS 블록 안에도, 접기 안에도 서로를 넣을 수 있다. 인용문, 리스트 안에서는 접기를 쓸 수 없다.
+ *       - 문단 제목이 "## + 제목" 이면 처음부터 접혀 있는 문단이다 (WikiSection.folded).
  *   - 메타 블록(분류, 정보, 이미지)과 주석(%%)의 규칙은 meta.ts 머리말에 있다. 메타 블록의 경고도 warnings 에 담는다.
  *   - 목차: 한 줄에 [toc] 만 있는 문단(맨 바깥 단계)은 그 자리에 목차가 나오는 toc 블록이 된다.
  *       - 문서에서 처음 나온 하나만 쓰고, 나머지는 버리며 warnings 에 남긴다 (목차 id 가 겹치지 않게).
@@ -57,7 +65,8 @@ type MdNode = {
  *   - 본문 길이: 넘는 뒤쪽을 자른다 (마지막 줄바꿈 기준).
  *   - 각주: 200개를 넘는 것은 각주로 만들지 않고 원문 글자로 둔다.
  *   - 이미지: 50개를 넘는 그림은 설명 글자만 남긴다.
- *   - 인용문 3단계, 리스트 4단계를 넘는 중첩은 껍데기를 벗기고 안의 내용만 남긴다.
+ *   - 인용문 3단계, 리스트 4단계, 접기 3단계를 넘는 중첩은 껍데기를 벗기고 안의 내용만 남긴다.
+ *   - 접기 제목: 100자를 넘으면 자른다.
  *   - 표: 열 12개, 행 300개를 넘으면 표 전체를 버린다.
  */
 export const LIMITS = {
@@ -66,6 +75,8 @@ export const LIMITS = {
   images: 50,
   quoteDepth: 3,
   listDepth: 4,
+  foldDepth: 3,
+  foldTitle: 100,
   tableCols: 12,
   tableRows: 300,
 } as const;
@@ -103,6 +114,16 @@ interface StyleBlockSource {
   contentLines: number[];
 }
 
+interface FoldBlockSource {
+  /** 여는 줄에 쓴 제목 (글자 그대로. 비어 있을 수 있다) */
+  title: string;
+  /** 여는 줄이 원문 몇 번째 줄(0부터)인지 */
+  titleLine: number;
+  content: string;
+  /** 안쪽 글의 각 줄이 원문 몇 번째 줄(0부터)인지 */
+  contentLines: number[];
+}
+
 /* 파싱 중에 함께 끌고 다니는 것들 */
 interface Ctx {
   /** 문서에 실제로 나온 각주의 내용 (1번부터 순서대로) */
@@ -111,6 +132,10 @@ interface Ctx {
   notes: RawFootnote[];
   warnings: string[];
   styled: StyleBlockSource[];
+  /** 떼어 낸 접기 블록 전부 (자리표시의 번호가 이 목록의 위치다. 중첩된 것도 같은 목록에 쌓는다) */
+  folds: FoldBlockSource[];
+  /** 지금 들어와 있는 접기 중첩 단계 */
+  foldDepth: number;
   /** 지금까지 만든 이미지 블록 수 */
   images: number;
   /** 지금 들어와 있는 인용문, 리스트 중첩 단계 */
@@ -148,6 +173,9 @@ function lineOf(node: MdNode, ctx: Ctx): number | undefined {
 /* CSS 블록 자리에 남기는 문단에 쓰는 글자 (사용자 글에서는 먼저 지운다) */
 const SENTINEL = "";
 const SENTINEL_PATTERN = new RegExp(`^${SENTINEL}(\\d+)${SENTINEL}$`);
+/* 접기 블록 자리에 남기는 문단에 쓰는 글자 */
+const FOLD_SENTINEL = "\ue002";
+const FOLD_PATTERN = new RegExp(`^${FOLD_SENTINEL}(\\d+)${FOLD_SENTINEL}$`);
 
 const processor = unified().use(remarkParse).use(remarkGfm);
 
@@ -251,6 +279,13 @@ function toBlocks(nodes: MdNode[], ctx: Ctx): WikiBlock[] {
       case "paragraph": {
         const only = node.children?.length === 1 ? node.children[0] : undefined;
 
+        // 접기 블록이 있던 자리 (자리표시 문단)
+        const foldMarker = only?.type === "text" ? FOLD_PATTERN.exec(only.value ?? "") : null;
+        if (foldMarker) {
+          out.push(...toFoldBlock(ctx.folds[Number(foldMarker[1])], ctx));
+          break;
+        }
+
         // CSS 블록이 있던 자리 (자리표시 문단)
         const marker = only?.type === "text" ? SENTINEL_PATTERN.exec(only.value ?? "") : null;
         if (marker) {
@@ -334,6 +369,69 @@ function warnDropped(node: MdNode, ctx: Ctx) {
   }
 }
 
+/*
+ * 블록(CSS 블록, 접기 블록)의 안쪽 글을 따로 파싱해서 위키 블록으로 바꾼다.
+ * 안쪽에서 접기 블록이 있으면 먼저 떼어 내고, 줄 번호는 안쪽 글의 지도(contentLines)로 원문에 되돌린다.
+ * 안쪽에는 제목(##)을 쓸 수 없다. 문단 구조는 블록 밖에서만 만든다.
+ */
+function parseInner(content: string, contentLines: number[], ctx: Ctx, label: string): WikiBlock[] {
+  const outerMap = ctx.lineMap;
+  const outerLine = ctx.line;
+
+  const extracted = extractFoldBlocks(content, ctx.folds);
+  for (const fold of extracted.created) {
+    fold.titleLine = contentLines[fold.titleLine];
+    fold.contentLines = fold.contentLines.map((i) => contentLines[i]);
+  }
+  ctx.lineMap = extracted.lineMap.map((i) => contentLines[i]);
+
+  const children: WikiBlock[] = [];
+  const inner = processor.parse(extracted.text) as MdNode;
+  for (const node of inner.children ?? []) {
+    ctx.line = lineOf(node, ctx) ?? outerLine;
+    if (node.type === "heading") {
+      warn(ctx, `${label} 안에서는 제목을 쓸 수 없어 버렸습니다: "${plainText(node.children, ctx.notes)}"`);
+    } else if (BLOCK_TYPES.has(node.type)) {
+      children.push(...toBlocks([node], ctx));
+    } else {
+      warnDropped(node, ctx);
+    }
+  }
+
+  ctx.lineMap = outerMap;
+  ctx.line = outerLine;
+  return children;
+}
+
+/* 접기 블록 하나를 위키 블록으로 바꾼다. 너무 깊거나 안이 비면 껍데기를 벗긴다. */
+function toFoldBlock(source: FoldBlockSource | undefined, ctx: Ctx): WikiBlock[] {
+  if (!source) return [];
+  const outerLine = ctx.line;
+  ctx.line = source.titleLine + 1;
+
+  const tooDeep = ctx.foldDepth >= LIMITS.foldDepth;
+  if (tooDeep) {
+    warnOnce(ctx, "fold", `접기는 ${LIMITS.foldDepth}단계까지만 중첩할 수 있어 더 깊은 접기는 펼친 채로 풀었습니다.`);
+  }
+  ctx.foldDepth += 1;
+  const children = parseInner(source.content, source.contentLines, ctx, "접기");
+  ctx.foldDepth -= 1;
+
+  let title = restoreFootnoteText(source.title, ctx.notes).trim();
+  if (title.length > LIMITS.foldTitle) {
+    warn(ctx, `접기 제목은 ${LIMITS.foldTitle}자까지만 쓸 수 있어 뒤를 잘랐습니다.`);
+    title = title.slice(0, LIMITS.foldTitle);
+  }
+  ctx.line = outerLine;
+
+  if (tooDeep) return children;
+  if (children.length === 0) {
+    warn(ctx, "내용이 없는 접기 블록은 버렸습니다.", source.titleLine + 1);
+    return [];
+  }
+  return [{ type: "fold", title, children }];
+}
+
 /* CSS 블록 하나를 위키 블록으로 바꾼다. 통과한 선언이 없으면 감싸지 않고 안쪽 블록만 남긴다. */
 function toStyleBlock(source: StyleBlockSource | undefined, ctx: Ctx): WikiBlock[] | null {
   if (!source) return null;
@@ -343,24 +441,7 @@ function toStyleBlock(source: StyleBlockSource | undefined, ctx: Ctx): WikiBlock
     warn(ctx, `CSS 블록: "${declaration}" 선언은 허용되지 않아 버렸습니다.`, original === undefined ? ctx.line : original + 1);
   });
 
-  // 안쪽 글은 따로 파싱하므로 줄 번호도 안쪽 글의 지도로 바꿔서 읽는다
-  const outerMap = ctx.lineMap;
-  const outerLine = ctx.line;
-  ctx.lineMap = source.contentLines;
-  const children: WikiBlock[] = [];
-  const inner = processor.parse(source.content) as MdNode;
-  for (const node of inner.children ?? []) {
-    ctx.line = lineOf(node, ctx) ?? outerLine;
-    if (node.type === "heading") {
-      warn(ctx, `CSS 블록 안에서는 제목을 쓸 수 없어 버렸습니다: "${plainText(node.children, ctx.notes)}"`);
-    } else if (BLOCK_TYPES.has(node.type)) {
-      children.push(...toBlocks([node], ctx));
-    } else {
-      warnDropped(node, ctx);
-    }
-  }
-  ctx.lineMap = outerMap;
-  ctx.line = outerLine;
+  const children = parseInner(source.content, source.contentLines, ctx, "CSS 블록");
 
   if (Object.keys(style).length === 0) return children;
   if (children.length === 0) return [];
@@ -381,7 +462,7 @@ function findClosing(lines: string[], from: number): number {
  * 코드 블록(``` 나 ~~~) 안은 건드리지 않는다. 짝이 안 맞으면 그대로 둔다.
  */
 function extractStyleBlocks(markdown: string): { text: string; blocks: StyleBlockSource[]; lineMap: number[] } {
-  const lines = markdown.replaceAll(SENTINEL, "").split(/\r?\n/);
+  const lines = markdown.replaceAll(SENTINEL, "").replaceAll(FOLD_SENTINEL, "").split(/\r?\n/);
   const out: string[] = [];
   const lineMap: number[] = []; // 결과의 각 줄이 입력의 몇 번째 줄(0부터)이었는지
   const blocks: StyleBlockSource[] = [];
@@ -430,6 +511,84 @@ function extractStyleBlocks(markdown: string): { text: string; blocks: StyleBloc
   return { text: out.join("\n"), blocks, lineMap };
 }
 
+/*
+ * 접기 블록을 줄 단위로 떼어 낸다.
+ *   +++ 제목 / 내용 / +++
+ * 여는 줄의 + 개수(세 개 이상)가 N 이면, 닫는 줄은 N 개 이상의 + 만 있는 줄이다.
+ * 코드 블록(``` 나 ~~~) 안은 건드리지 않고, 짝이 안 맞으면 그대로 둔다.
+ * 떼어 낸 것은 store 에 쌓고(번호가 store 안의 위치다), 이번에 만든 것은 created 로 돌려준다.
+ * created 의 줄 번호는 이 글(markdown) 안의 줄이다 (호출하는 쪽이 원문 줄로 되돌린다).
+ */
+function extractFoldBlocks(
+  markdown: string,
+  store: FoldBlockSource[],
+): { text: string; created: FoldBlockSource[]; lineMap: number[] } {
+  const lines = markdown.split(/\r?\n/);
+  const out: string[] = [];
+  const lineMap: number[] = [];
+  const created: FoldBlockSource[] = [];
+  let fence: string | null = null;
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    const fenceMatch = /^ {0,3}(`{3,}|~{3,})/.exec(line);
+
+    if (fence) {
+      if (fenceMatch && fenceMatch[1][0] === fence[0] && fenceMatch[1].length >= fence.length) fence = null;
+      out.push(line);
+      lineMap.push(i);
+      continue;
+    }
+    if (fenceMatch) {
+      fence = fenceMatch[1];
+      out.push(line);
+      lineMap.push(i);
+      continue;
+    }
+
+    const open = /^(\+{3,})[ \t]*(.*?)[ \t]*$/.exec(line);
+    if (open) {
+      const closing = new RegExp(`^\\+{${open[1].length},}[ \\t]*$`);
+      let inner: string | null = null;
+      let end = -1;
+      for (let j = i + 1; j < lines.length; j += 1) {
+        const innerFence = /^ {0,3}(`{3,}|~{3,})/.exec(lines[j]);
+        if (inner) {
+          if (innerFence && innerFence[1][0] === inner[0] && innerFence[1].length >= inner.length) inner = null;
+          continue;
+        }
+        if (innerFence) {
+          inner = innerFence[1];
+          continue;
+        }
+        if (closing.test(lines[j])) {
+          end = j;
+          break;
+        }
+      }
+      if (end >= 0) {
+        const source: FoldBlockSource = {
+          title: open[2],
+          titleLine: i,
+          content: lines.slice(i + 1, end).join("\n"),
+          contentLines: Array.from({ length: end - i - 1 }, (_, k) => i + 1 + k),
+        };
+        store.push(source);
+        created.push(source);
+        // 앞뒤에 빈 줄을 둬서 자리표시가 독립된 문단이 되게 한다
+        out.push("", `${FOLD_SENTINEL}${store.length - 1}${FOLD_SENTINEL}`, "");
+        lineMap.push(i, i, i);
+        i = end;
+        continue;
+      }
+    }
+    out.push(line);
+    lineMap.push(i);
+  }
+
+  return { text: out.join("\n"), created, lineMap };
+}
+
 /* 문단이 [toc] 한 줄뿐인지. 원문을 보고 판단해서 \[toc] 처럼 이스케이프한 것은 글자로 남긴다. */
 function isTocParagraph(node: MdNode, source: string): boolean {
   const start = node.position?.start.offset;
@@ -474,8 +633,16 @@ export function parseWiki(markdown: string): ParsedWiki {
   const withNotes = extractFootnotes(withoutMeta.text);
   const afterNotes = withNotes.lineMap.map((i) => afterMeta[i]);
   const extracted = extractStyleBlocks(withNotes.text);
-  const { text, blocks } = extracted;
-  const lineMap = extracted.lineMap.map((i) => afterNotes[i]);
+  const { blocks } = extracted;
+  const styleLineMap = extracted.lineMap.map((i) => afterNotes[i]);
+  const folds: FoldBlockSource[] = [];
+  const foldExtracted = extractFoldBlocks(extracted.text, folds);
+  const text = foldExtracted.text;
+  const lineMap = foldExtracted.lineMap.map((i) => styleLineMap[i]);
+  for (const fold of foldExtracted.created) {
+    fold.titleLine = styleLineMap[fold.titleLine];
+    fold.contentLines = fold.contentLines.map((i) => styleLineMap[i]);
+  }
   const toOriginal = (map: number[]) => (lines: number[]) => lines.map((i) => map[i]);
   const originalOf = toOriginal(afterNotes);
   for (const block of blocks) {
@@ -497,6 +664,8 @@ export function parseWiki(markdown: string): ParsedWiki {
     warnings: diagnostics.map((d) => d.message),
     diagnostics,
     styled: blocks,
+    folds,
+    foldDepth: 0,
     images: 0,
     quoteDepth: 0,
     listDepth: 0,
@@ -531,7 +700,11 @@ export function parseWiki(markdown: string): ParsedWiki {
       }
       // ## 다음에 바로 #### 처럼 단계를 건너뛰면 가장 가까운 윗단계 아래에 둔다
       const level = Math.min(node.depth - 2, stack.length); // ## -> 0
-      const section: WikiSection = { title: plainText(node.children, ctx.notes), blocks: [] };
+      // "## + 제목" 은 처음부터 접혀 있는 문단이다
+      const rawTitle = plainText(node.children, ctx.notes);
+      const foldedHeading = /^\+\s+\S/.test(rawTitle);
+      const section: WikiSection = { title: foldedHeading ? rawTitle.replace(/^\+\s+/, "") : rawTitle, blocks: [] };
+      if (foldedHeading) section.folded = true;
       stack.length = Math.min(stack.length, level);
       if (level === 0) root.push(section);
       else {

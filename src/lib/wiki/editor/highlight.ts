@@ -60,6 +60,10 @@ function build(view: EditorView): DecorationSet {
     } else if (/^:::[ \t]*$/.test(text) && style !== "none") {
       style = style === "declarations" ? "content" : "none";
       classes.push("fence");
+    } else if (/^\+{3,}/.test(text) && style !== "declarations") {
+      // 접기 블록의 여는 줄(+++ 제목)과 닫는 줄(+++)
+      classes.push("fence");
+      inlineMarks = false;
     } else if (style === "declarations") {
       classes.push("declaration");
       inlineMarks = false;

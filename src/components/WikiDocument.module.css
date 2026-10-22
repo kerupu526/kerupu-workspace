@@ -265,3 +265,72 @@
 .fnBack {
   font-weight: var(--font-weight-bold);
 }
+
+/* ---------- 접기 ---------- */
+
+/* 접기 블록: 제목 줄을 누르면 열린다. 테두리는 장식(card-border)이고, 열림은 ▸ 모양과 aria 가 알린다. */
+.fold {
+  /* 오른쪽에 떠 있는 정보 상자 아래로 테두리가 깔리지 않게, 상자 옆의 남는 폭에 맞춘다 */
+  display: flow-root;
+  margin: 0 0 var(--space-16);
+  border: var(--border-width) solid var(--card-border);
+  border-radius: var(--radius-field);
+  background: var(--surface-page);
+}
+
+.foldSummary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-12) var(--space-24);
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+
+/* 기본 삼각형 대신 우리 모양을 쓴다 (사파리 포함) */
+.foldSummary::-webkit-details-marker {
+  display: none;
+}
+
+.foldSummary::before,
+.sectionFoldSummary .heading::before {
+  content: "▸";
+  flex: none;
+  display: inline-block;
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+
+.fold[open] > .foldSummary::before,
+.sectionFold[open] > .sectionFoldSummary .heading::before {
+  transform: rotate(90deg);
+}
+
+.foldSummary:focus-visible,
+.sectionFoldSummary:focus-visible {
+  outline: 3px solid var(--main-logo);
+  outline-offset: 2px;
+}
+
+.foldBody {
+  padding: var(--space-8) var(--space-24) 0;
+  border-top: var(--border-width) solid var(--card-border);
+}
+
+/* 접힌 문단: 제목 줄이 열고 닫는 줄이다 */
+.sectionFoldSummary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.sectionFoldSummary::-webkit-details-marker {
+  display: none;
+}
+
+.sectionFoldSummary .heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-12);
+}

@@ -32,7 +32,9 @@ export type WikiBlock =
   /** CSS 블록: 허용 목록을 통과한 선언만 담긴다 (파서에서 걸러진다). 이름은 camelCase. */
   | { type: "style"; style: Record<string, string>; children: WikiBlock[] }
   /** [toc] 를 쓴 자리. 목차는 문서의 문단 제목에서 만든다. */
-  | { type: "toc" };
+  | { type: "toc" }
+  /** 접기 블록: 제목 줄을 누르면 안의 블록이 펼쳐진다. 처음에는 접혀 있다. title 이 비어 있으면 "더 보기". */
+  | { type: "fold"; title: string; children: WikiBlock[] };
 
 export interface WikiListItem {
   content: WikiInline[];
@@ -42,6 +44,8 @@ export interface WikiListItem {
 
 export interface WikiSection {
   title: string;
+  /** 처음부터 접혀 있는 문단 ("## + 제목") */
+  folded?: boolean;
   blocks: WikiBlock[];
   children?: WikiSection[];
 }
@@ -207,6 +211,16 @@ function Blocks({ blocks, footnotes, toc }: { blocks: WikiBlock[]; footnotes: st
                 <Blocks blocks={block.children} footnotes={footnotes} toc={toc} />
               </div>
             );
+          case "fold":
+            // <details> 라서 JS 없이 열고 닫히고, 열고 닫는 상태는 키보드와 보조기기도 안다
+            return (
+              <details key={i} className={styles.fold}>
+                <summary className={styles.foldSummary}>{block.title || "더 보기"}</summary>
+                <div className={styles.foldBody}>
+                  <Blocks blocks={block.children} footnotes={footnotes} toc={toc} />
+                </div>
+              </details>
+            );
           case "image":
             // 이미지는 사이트에 올린 파일만 (파서에서 걸러진다). 설명은 항상 있다.
             return (
@@ -224,14 +238,32 @@ function Blocks({ blocks, footnotes, toc }: { blocks: WikiBlock[]; footnotes: st
 function Sections({ items, footnotes, toc }: { items: Numbered[]; footnotes: string[]; toc: TocItem[] }) {
   return items.map((item) => {
     const Heading = `h${item.headingLevel}` as "h2" | "h3" | "h4" | "h5" | "h6";
-    return (
-      <section key={item.id} className={styles.section} aria-labelledby={item.id}>
-        <Heading className={`${styles.heading} ${styles[`level${item.headingLevel}`] ?? ""}`} id={item.id}>
-          <span className={styles.number}>{item.number}</span>
-          {item.section.title}
-        </Heading>
+    const heading = (
+      <Heading className={`${styles.heading} ${styles[`level${item.headingLevel}`] ?? ""}`} id={item.id}>
+        <span className={styles.number}>{item.number}</span>
+        {item.section.title}
+      </Heading>
+    );
+    const body = (
+      <>
         <Blocks blocks={item.section.blocks} footnotes={footnotes} toc={toc} />
         <Sections items={item.children} footnotes={footnotes} toc={toc} />
+      </>
+    );
+    return (
+      <section key={item.id} className={styles.section} aria-labelledby={item.id}>
+        {item.section.folded ? (
+          // 접힌 문단: 제목 줄이 열고 닫는 줄이다. 목차 링크로 들어오면 브라우저가 알아서 펼친다.
+          <details className={styles.sectionFold}>
+            <summary className={styles.sectionFoldSummary}>{heading}</summary>
+            {body}
+          </details>
+        ) : (
+          <>
+            {heading}
+            {body}
+          </>
+        )}
       </section>
     );
   });

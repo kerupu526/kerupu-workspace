@@ -13,6 +13,8 @@ test("제한 값은 설계 문서 5장과 같다", () => {
     images: 50,
     quoteDepth: 3,
     listDepth: 4,
+    foldDepth: 3,
+    foldTitle: 100,
     tableCols: 12,
     tableRows: 300,
   });
