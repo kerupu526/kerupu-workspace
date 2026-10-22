@@ -141,3 +141,57 @@ test("없거나 허용되지 않거나 DB 모양 검사에 걸릴 주소는 null
   // 프로젝트 주소 설정이 없으면 업로드 주소는 받지 않는다
   withBase(undefined, () => assert.equal(imageForList(storageImageUrl(BASE, `${ID}/${FILE}.png`)), null));
 });
+
+/* ---- 사이트 안 경로 /media/... ---- */
+
+import { isMediaPath, mediaObjectPath, mediaPath } from "./image-url.ts";
+
+test("업로드 경로는 /media/<사용자 ID>/<파일 ID>.<확장자> 이고 프로젝트 주소 설정 없이도 이미지로 받는다", () => {
+  const path = mediaPath(`${ID}/${FILE}.webp`);
+  assert.equal(path, `/media/${ID}/${FILE}.webp`);
+  assert.equal(isMediaPath(path), true);
+  withBase(undefined, () => {
+    assert.equal(isAllowedImageSrc(path), true);
+    assert.equal(imageForList(path), path);
+  });
+});
+
+test("모양이 다른 /media/ 경로는 받지 않는다", () => {
+  for (const src of [
+    `/media/${ID}/${FILE}.exe`,
+    `/media/${ID}/${FILE}.png?x=1`,
+    `/media/${ID}/${FILE}.png/extra`,
+    `/media/${ID}/../${FILE}.png`,
+    `/media/someone/${FILE}.png`,
+    `/media/${ID}/photo.png`,
+    `//evil.example/media/${ID}/${FILE}.png`,
+    `/other/${ID}/${FILE}.png`,
+  ]) {
+    assert.equal(isMediaPath(src), false, src);
+    assert.equal(isAllowedImageSrc(src), false, src);
+  }
+});
+
+test("/media 길은 UUID 두 조각과 허용한 확장자만 Storage 경로로 바꾼다", () => {
+  assert.deepEqual(mediaObjectPath(ID, `${FILE}.png`), { path: `${ID}/${FILE}.png`, ext: "png" });
+  assert.deepEqual(mediaObjectPath(ID, `${FILE}.svg`), { path: `${ID}/${FILE}.svg`, ext: "svg" });
+  for (const [uid, file] of [
+    ["..", `${FILE}.png`],
+    [ID, "../x.png"],
+    [ID, `${FILE}.png%2f..%2f..`],
+    [ID, `${FILE}.exe`],
+    [ID, FILE],
+    ["other-bucket", `${FILE}.png`],
+    [`${ID}/..`, `${FILE}.png`],
+  ]) {
+    assert.equal(mediaObjectPath(uid, file), null, `${uid}/${file}`);
+  }
+});
+
+test("예전에 올린 Storage 주소도 그대로 받는다", () => {
+  withBase(BASE, () => {
+    const old = storageImageUrl(BASE, `${ID}/${FILE}.png`);
+    assert.equal(isAllowedImageSrc(old), true);
+    assert.equal(imageForList(old), old);
+  });
+});

@@ -4,9 +4,9 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkSvg, detectRasterType, looksLikeSvg, MAX_IMAGE_BYTES, ACCEPTED_LABEL, type ImageKind } from "@/lib/wiki/image-upload";
-import { IMAGE_BUCKET, storageImageUrl } from "@/lib/wiki/image-url";
+import { IMAGE_BUCKET, mediaPath } from "@/lib/wiki/image-url";
 
-/* 업로드 결과. 성공하면 올린 파일의 공개 주소가 있고, 실패하면 이유만 있다. */
+/* 업로드 결과. 성공하면 올린 파일의 사이트 안 경로(/media/...)가 있고, 실패하면 이유만 있다. */
 export interface UploadState {
   message?: string;
   url?: string;
@@ -62,7 +62,6 @@ export async function uploadImage(_prev: UploadState, formData: FormData): Promi
     return { message: "이미지를 올리지 못했어요. 잠시 뒤 다시 해 주세요." };
   }
 
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!base) return { message: "이미지를 올리지 못했어요. 서버 설정을 확인해 주세요." };
-  return { url: storageImageUrl(base, objectPath), fileName: file.name };
+  // 글에는 사이트 안 경로(/media/...)를 쓴다. 사이트 주소(도메인)가 바뀌어도 글을 고칠 필요가 없다.
+  return { url: mediaPath(objectPath), fileName: file.name };
 }

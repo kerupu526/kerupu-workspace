@@ -1,6 +1,8 @@
 /*
  * 위키 글에서 쓸 수 있는 이미지 주소의 규칙. 이 파일은 아무것도 가져오지 않는다 (Node 테스트에서 그대로 읽는다).
- *   - 이미지 업로드 화면에서 올린 파일: Supabase Storage 의 images 버킷 공개 주소
+ *   - 이미지 업로드 화면에서 올린 파일: 우리 사이트 주소 /media/<사용자 ID>/<파일 ID>.<확장자>
+ *     (src/app/media 가 Storage 의 images 버킷에서 받아서 내려 준다. 사이트 주소가 바뀌어도 글을 고칠 필요가 없게 상대 경로다)
+ *   - 예전에 올린 파일의 Supabase Storage 공개 주소 (그대로 받는다)
  *       <프로젝트 주소>/storage/v1/object/public/images/<사용자 ID>/<파일 ID>.<확장자>
  *     (업로드 화면이 만드는 모양 그대로만 받는다. 다른 버킷이나 다른 주소는 받지 않는다)
  *   - 예전 방식: /uploads/ 로 시작하는 사이트 안의 파일
@@ -23,6 +25,34 @@ export function isStorageImageUrl(src: string, base: string | undefined): boolea
   return src.startsWith(prefix) && OBJECT_PATH.test(src.slice(prefix.length));
 }
 
+/* 업로드한 파일을 사이트 안에서 부르는 경로 (objectPath: <사용자 ID>/<파일 ID>.<확장자>) */
+export function mediaPath(objectPath: string): string {
+  return `/media/${objectPath}`;
+}
+
+const MEDIA_PATH = new RegExp(`^/media/${UUID}/${UUID}\\.(?:png|jpg|webp|gif|svg)$`);
+
+export function isMediaPath(src: string): boolean {
+  return MEDIA_PATH.test(src);
+}
+
+export const MEDIA_TYPES = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+  svg: "image/svg+xml",
+} as const;
+
+/*
+ * /media/[uid]/[file] 의 두 조각이 올바른 모양이면 Storage 안의 경로와 형식을, 아니면 null 을 돌려준다.
+ * 모양을 엄격히 맞추는 것이 이 길로 다른 버킷이나 다른 경로를 열지 못하게 하는 안전장치다.
+ */
+export function mediaObjectPath(uid: string, file: string): { path: string; ext: keyof typeof MEDIA_TYPES } | null {
+  const match = new RegExp(`^(${UUID})/(${UUID})\\.(png|jpg|webp|gif|svg)$`).exec(`${uid}/${file}`);
+  return match ? { path: `${match[1]}/${match[2]}.${match[3]}`, ext: match[3] as keyof typeof MEDIA_TYPES } : null;
+}
+
 export function isLegacyUploadPath(src: string): boolean {
   return src.startsWith("/uploads/") && !src.includes("..");
 }
@@ -32,11 +62,12 @@ export function isLegacyUploadPath(src: string): boolean {
  * NEXT_PUBLIC_ 값은 빌드할 때 코드에 박히므로 브라우저와 서버가 같은 주소를 쓴다.
  */
 export function isAllowedImageSrc(src: string): boolean {
-  return isLegacyUploadPath(src) || isStorageImageUrl(src, process.env.NEXT_PUBLIC_SUPABASE_URL);
+  return isMediaPath(src) || isLegacyUploadPath(src) || isStorageImageUrl(src, process.env.NEXT_PUBLIC_SUPABASE_URL);
 }
 
 /* documents.image 열의 check 와 같은 모양 (supabase/migrations/20261023100000_documents_image.sql) */
 const DB_UPLOADS = /^\/uploads\/[A-Za-z0-9._/-]+$/;
+const DB_MEDIA = new RegExp(`^/media/${UUID}/${UUID}\\.(?:png|jpg|webp|gif|svg)$`);
 const DB_STORAGE = new RegExp(`^https?://[A-Za-z0-9.-]+(?::[0-9]+)?/storage/v1/object/public/${IMAGE_BUCKET}/${UUID}/${UUID}\\.(?:png|jpg|webp|gif|svg)$`);
 
 /*
@@ -46,6 +77,6 @@ const DB_STORAGE = new RegExp(`^https?://[A-Za-z0-9.-]+(?::[0-9]+)?/storage/v1/o
 export function imageForList(src: string | undefined): string | null {
   if (!src || src.length > 500) return null;
   if (!isAllowedImageSrc(src)) return null;
-  const shapeOk = (DB_UPLOADS.test(src) && !src.includes("..")) || DB_STORAGE.test(src);
+  const shapeOk = DB_MEDIA.test(src) || (DB_UPLOADS.test(src) && !src.includes("..")) || DB_STORAGE.test(src);
   return shapeOk ? src : null;
 }

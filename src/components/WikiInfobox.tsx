@@ -4,9 +4,9 @@ import styles from "./WikiInfobox.module.css";
 
 export interface WikiInfoboxData {
   title: string;
-  /** 이미지가 없을 때 자리에 쓰는 글자이기도 하고, 이미지가 있을 때는 그 설명(alt)이다 */
+  /** 이미지 설명(alt) */
   imageLabel: string;
-  /** 사이트에 올린 이미지 주소 (파서가 안전한 것만 넘긴다) */
+  /** 사이트에 올린 이미지 주소 (파서가 안전한 것만 넘긴다). 없으면 이미지 칸을 그리지 않는다 */
   image?: string;
   rows: { label: string; value: string }[];
   /** 메타 블록의 정보 아래에 쓴 표 (칸 서식과 합치기가 풀려 있다). 이름: 값 줄 아래에 이어서 그린다. */
@@ -24,18 +24,15 @@ export default function WikiInfobox({ title, imageLabel, image, rows, table }: W
       <table className={styles.table}>
         <caption className={styles.caption}>{title}</caption>
         <tbody>
-          <tr>
-            <td className={styles.imageCell} colSpan={2}>
-              {image ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image} alt={imageLabel} className={styles.picture} loading="lazy" />
-                </>
-              ) : (
-                <div className={styles.image}>{imageLabel}</div>
-              )}
-            </td>
-          </tr>
+          {/* 이미지는 메타 블록에 "이미지:" 를 쓴 문서에만 나온다 (없으면 이미지 칸 자체가 없다) */}
+          {image ? (
+            <tr>
+              <td className={styles.imageCell} colSpan={2}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={image} alt={imageLabel} className={styles.picture} loading="lazy" />
+              </td>
+            </tr>
+          ) : null}
           {rows.map((row) => (
             <tr key={row.label}>
               <th className={styles.label} scope="row">

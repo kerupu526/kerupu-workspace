@@ -1,4 +1,4 @@
--- 문서 대표 이미지 열 테스트 (마이그레이션 20261023100000_documents_image.sql 대상).
+-- 문서 대표 이미지 열 테스트 (마이그레이션 20261023100000_documents_image.sql 과 20261023110000_documents_image_media.sql 대상).
 -- create_character.sql 과 같은 방식: 가짜 사용자로 확인하고 끝에 테스트 데이터를 지운다.
 -- 실행: npx supabase db query --linked -f supabase/tests/documents_image.sql
 -- 결과 표의 matched 열이 모두 true 여야 한다.
@@ -42,6 +42,9 @@ select pg_temp.run('A가 문서 만들기', 'ok, 행 1', 'authenticated', '11111
 select pg_temp.run('Storage 공개 주소', 'ok, 행 1', 'authenticated', '11111111-1111-1111-1111-111111111111',
   $q$update public.documents set image = 'https://abc.supabase.co/storage/v1/object/public/images/11111111-1111-1111-1111-111111111111/22222222-2222-2222-2222-222222222222.png' where slug = 'img-test-a'$q$);
 
+select pg_temp.run('사이트 안 /media/ 경로', 'ok, 행 1', 'authenticated', '11111111-1111-1111-1111-111111111111',
+  $q$update public.documents set image = '/media/11111111-1111-1111-1111-111111111111/22222222-2222-2222-2222-222222222222.webp' where slug = 'img-test-a'$q$);
+
 select pg_temp.run('예전 /uploads/ 주소', 'ok, 행 1', 'authenticated', '11111111-1111-1111-1111-111111111111',
   $q$update public.documents set image = '/uploads/characters/a-1.png' where slug = 'img-test-a'$q$);
 
@@ -60,6 +63,12 @@ select pg_temp.run('허용 안 되는 확장자', 'error 23514', 'authenticated'
 
 select pg_temp.run('쿼리가 붙은 주소', 'error 23514', 'authenticated', '11111111-1111-1111-1111-111111111111',
   $q$update public.documents set image = 'https://abc.supabase.co/storage/v1/object/public/images/11111111-1111-1111-1111-111111111111/22222222-2222-2222-2222-222222222222.png?x=1' where slug = 'img-test-a'$q$);
+
+select pg_temp.run('/media/ 경로에 UUID 가 아닌 조각', 'error 23514', 'authenticated', '11111111-1111-1111-1111-111111111111',
+  $q$update public.documents set image = '/media/someone/photo.png' where slug = 'img-test-a'$q$);
+
+select pg_temp.run('/media/ 경로에 쿼리', 'error 23514', 'authenticated', '11111111-1111-1111-1111-111111111111',
+  $q$update public.documents set image = '/media/11111111-1111-1111-1111-111111111111/22222222-2222-2222-2222-222222222222.png?x=1' where slug = 'img-test-a'$q$);
 
 select pg_temp.run('/uploads/ 안의 .. 경로', 'error 23514', 'authenticated', '11111111-1111-1111-1111-111111111111',
   $q$update public.documents set image = '/uploads/../secret.png' where slug = 'img-test-a'$q$);

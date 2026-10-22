@@ -5,6 +5,7 @@ import type { WikiBlock, WikiInline, WikiListItem, WikiSection } from "@/compone
 import { sanitizeStyle, toReactStyle } from "./css.ts";
 import { extractMeta, stripCommentsMapped, type WikiMeta } from "./meta.ts";
 import { computeMerges, type CellMark } from "./table-merge.ts";
+import { escapeTableSpoilers } from "./table-spoiler.ts";
 import { isAllowedImageSrc } from "./image-url.ts";
 import { extractFootnotes, restoreFootnoteText, splitFootnoteMarks, type RawFootnote } from "./footnote.ts";
 
@@ -22,7 +23,8 @@ import { extractFootnotes, restoreFootnoteText, splitFootnoteMarks, type RawFoot
  *   - 블록: 문단, 순서 없는/있는 리스트(중첩 가능), 인용문(중첩 가능), 수평줄, 표, 이미지(문단 하나에 단독).
  *   - 인라인: **굵게**, *기울임*, ~~취소선~~, `코드`, [글](주소), ^[각주], ||스포일러||.
  *       - ||가릴 글|| 은 짝이 맞는 것만 스포일러가 된다 (속이 비거나 짝이 없으면 글자). 서식은 속에 들어갈 수 있다.
- *         제목과 각주 안에서는 스포일러가 되지 않고 || 글자로 남는다. 표 셀 안에서는 \|\|글\|\| 로 쓴다.
+ *         제목과 각주 안에서는 스포일러가 되지 않고 || 글자로 남는다. 표 줄 안의 ||글|| 은 table-spoiler.ts 가 파싱 전에 \|\|글\|\| 로 바꿔서
+ *         칸이 쪼개지지 않고 스포일러가 된다 (\|\|글\|\| 로 직접 써도 된다).
  *   - 링크 주소는 /, #, https:// 로 시작하는 것만 허용한다. 나머지는 글자로만 남긴다.
  *   - 처리하지 않는 블록(코드 블록 등)은 버린다.
  *   - CSS 블록(:::style 선언 ::: 내용 :::)은 마크다운 파서가 모르는 문법이라서 파싱 전에 줄 단위로 먼저 떼어 낸다.
@@ -468,7 +470,7 @@ function toInfoboxTable(table: { source: string; lines: number[] }, originalLine
   ctx.lineMap = originalLines;
   ctx.line = originalLines[0] === undefined ? undefined : originalLines[0] + 1;
 
-  const tree = processor.parse(table.source) as MdNode;
+  const tree = processor.parse(escapeTableSpoilers(table.source)) as MdNode;
   const nodes = tree.children ?? [];
   const first = nodes.find((n) => n.type === "table");
   let result: Extract<WikiBlock, { type: "table" }> | undefined;
@@ -751,7 +753,8 @@ export function parseWiki(markdown: string): ParsedWiki {
   const afterMeta = stripped.lineMap.slice(withoutMeta.removedLines);
   const withNotes = extractFootnotes(withoutMeta.text);
   const afterNotes = withNotes.lineMap.map((i) => afterMeta[i]);
-  const extracted = extractStyleBlocks(withNotes.text);
+  // 표 줄의 ||글|| 은 칸 나누기와 겹치지 않게 미리 \\|\\|글\\|\\| 로 바꿔 둔다 (줄 수는 그대로)
+  const extracted = extractStyleBlocks(escapeTableSpoilers(withNotes.text));
   const { blocks } = extracted;
   const styleLineMap = extracted.lineMap.map((i) => afterNotes[i]);
   const folds: FoldBlockSource[] = [];

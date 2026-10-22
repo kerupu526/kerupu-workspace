@@ -237,9 +237,9 @@ docker compose up -d --build
 
 ## 이미지 업로드 (Supabase Storage)
 
-캐릭터 사전의 "새 이미지 업로드"(`/images/new`)는 이미지를 Supabase Storage의 `images` 버킷에 올린다. 서버 디스크는 쓰지 않아서 컨테이너는 계속 읽기 전용이다. 켜려면 세 가지가 필요하다.
+캐릭터 사전의 "새 이미지 업로드"(`/images/new`)는 이미지를 Supabase Storage의 `images` 버킷에 올리고, 글에서는 우리 사이트 주소 `/media/<사용자 ID>/<파일 ID>.<확장자>`로 쓴다. `/media`는 서버(`app/media`)가 Storage에서 받아서 내려 주는 길이라(파일 이름이 무작위 ID라 1년 캐시, `Cache-Control: immutable`) Supabase 주소가 글에 박히지 않고 Cloudflare가 이미지를 캐시한다. 서버 디스크는 쓰지 않아서 컨테이너는 계속 읽기 전용이다. 켜려면 세 가지가 필요하다.
 
-1. **버킷 만들기:** `supabase/migrations/20261023090000_images_bucket.sql`을 DB에 적용한다(dev 먼저, 운영은 확인한 뒤). 확인은 `supabase/tests/images_bucket.sql`.
+1. **버킷 만들기:** `supabase/migrations/20261023090000_images_bucket.sql`을 DB에 적용한다(dev 먼저, 운영은 확인한 뒤). 확인은 `supabase/tests/images_bucket.sql`. 대표 이미지 열(`20261023100000_documents_image.sql`)과 `/media` 경로 허용(`20261023110000_documents_image_media.sql`)도 순서대로 적용한다(`supabase/tests/documents_image.sql`로 확인).
 2. **secret 키:** 서버 `.env`에 `SUPABASE_SECRET_KEY`를 채운다(Supabase 대시보드 > Project Settings > API Keys의 Secret key). 올리기는 서버가 파일을 검사한 뒤 이 키로만 한다(일반 사용자에게는 버킷 올리기 권한이 없다). 값을 바꾼 뒤에는 `docker compose up -d`로 컨테이너를 다시 만든다.
 3. **Nginx 업로드 크기:** `deploy/nginx/kerupu.tech.conf`, `dev.kerupu.tech.conf`에 `client_max_body_size 10m;`가 들어 있다. 서버에서 설정을 다시 복사하고 `sudo nginx -t && sudo systemctl reload nginx`를 해야 반영된다. 이 줄이 없으면(Nginx 기본 1MB) 큰 이미지에서 413 오류가 난다.
 
@@ -247,6 +247,7 @@ docker compose up -d --build
 - 업로드가 "이미지를 올리지 못했어요"로 실패하면 서버 로그에 이유가 남는다: `docker compose logs --tail 50 web | grep image-upload` (버킷이 없으면 마이그레이션 미적용, 키가 틀리면 인증 오류).
 - 올린 파일은 사용자가 지울 수 없다. 잘못 올린 파일은 Supabase 대시보드 > Storage > images에서 지운다.
 - Cloudflare 무료 플랜의 업로드 한도(100MB)는 8MB보다 커서 따로 손볼 것이 없다.
+- `/media`가 Supabase에서 받지 못하면(없는 파일 등) 404, Supabase에 닿지 못하면 502를 돌려준다. 이미지가 안 보이면 `curl -I https://<도메인>/media/<사용자 ID>/<파일 ID>.png`로 상태를 확인한다. Cloudflare가 이미지를 캐시하므로 같은 이미지를 반복해서 받아도 서버와 Supabase 트래픽은 거의 늘지 않는다.
 
 ## 서버의 저장 위치 (`/data/kerupu`)
 
