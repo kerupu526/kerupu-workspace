@@ -129,8 +129,13 @@ const editorTheme = EditorView.theme({
   },
   ".cm-activeLine": { backgroundColor: "color-mix(in srgb, var(--card-border) 25%, transparent)" },
   ".cm-activeLineGutter": { backgroundColor: "var(--main-header)", fontWeight: "var(--font-weight-bold)" },
-  ".cm-selectionBackground, &.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
-    backgroundColor: "var(--main-header)",
+  // 선택 영역: 기본은 글 뒤(z-index -2)에 그려져서, 배경색이 있는 줄(메타 블록, CSS 블록, 코드)에서는 가려져 보이지 않았다.
+  // 글 위에 반투명 main-logo 로 덮어서 어떤 줄에서도 보이게 한다 (글자는 비쳐 읽힌다). 포커스가 없을 때는 더 옅게 둔다.
+  // (층의 z-index 는 편집기가 style 속성으로 직접 정하므로 !important 로 덮는다)
+  ".cm-selectionLayer": { zIndex: "1 !important" },
+  ".cm-selectionBackground": { backgroundColor: "color-mix(in srgb, var(--main-logo) 20%, transparent)" },
+  "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
+    backgroundColor: "color-mix(in srgb, var(--main-logo) 32%, transparent)",
   },
   // 문법 표시 (highlight.ts). 색만으로 구분하지 않도록 굵기와 모양도 함께 쓴다.
   ".cm-wiki-heading": { fontWeight: "var(--font-weight-bold)", borderBottom: "var(--border-width) solid var(--card-border)" },
