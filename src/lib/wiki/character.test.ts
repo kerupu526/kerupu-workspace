@@ -22,9 +22,11 @@ test("위키 주석 표시(%%)는 빼고 받는다", () => {
   assert.equal(result.value.name, "켈%프");
 });
 
-test("이름과 작품은 비울 수 없고, 한 줄 설명은 비울 수 있다", () => {
+test("이름은 비울 수 없고, 작품과 한 줄 설명은 비울 수 있다", () => {
   assert.equal(parseCharacterInput({ ...valid, name: "  " }).ok, false);
-  assert.equal(parseCharacterInput({ ...valid, work: "" }).ok, false);
+  const noWork = parseCharacterInput({ ...valid, work: "  " });
+  assert.ok(noWork.ok);
+  assert.equal(noWork.value.work, "");
   assert.equal(parseCharacterInput({ ...valid, summary: "" }).ok, true);
 });
 
@@ -59,6 +61,15 @@ test("첫 원문은 파서가 제목과 작품을 읽을 수 있고 경고가 �
   assert.equal(parsed.meta.infobox.title, "켈프");
   assert.deepEqual(parsed.meta.infobox.rows, [{ label: "작품", value: "테스트 작품" }]);
   assert.deepEqual(parsed.meta.categories, ["등장인물"]);
+  assert.equal(parsed.diagnostics.length, 0);
+});
+
+test("작품이 없으면 첫 원문에 작품 줄을 쓰지 않는다", () => {
+  const markdown = buildCharacterMarkdown({ ...valid, work: "" });
+  assert.doesNotMatch(markdown, /작품/);
+  const parsed = parseWiki(markdown);
+  assert.equal(parsed.meta.infobox.title, "켈프");
+  assert.deepEqual(parsed.meta.infobox.rows, []);
   assert.equal(parsed.diagnostics.length, 0);
 });
 

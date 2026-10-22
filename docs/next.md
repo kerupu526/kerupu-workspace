@@ -9,6 +9,9 @@
 - [ ] 편집 화면에서 정보의 `작품` 을 바꿔 저장하면 목록의 작품이 따라 바뀌는지
 - [ ] 한 줄 설명은 만들 때만 정한다 (고치는 화면은 아직 없음)
 - [ ] 이미 있는 문서(작품, 한 줄 설명 열이 비어 있음)는 목록에 "작품 미정"으로 나온다. 편집 화면에서 한 번 저장하면 작품이 채워진다.
+- [ ] Supabase(dev, 운영 각각) Authentication > URL Configuration > Redirect URLs 에 `https://<주소>/auth/recovery` 추가 (비밀번호 재설정 링크용. 개발용은 `http://localhost:3000/auth/recovery`)
+- [ ] 비밀번호 재설정: `/login` 의 "비밀번호를 잊으셨나요?" → 메일 → 새 비밀번호 → `/account` 까지 실제 메일로 확인
+- [ ] 내 계정의 "계정 설정 변경": 닉네임, 비밀번호 변경, 이메일 변경(새 주소로 확인 메일이 가고, Supabase 의 "Secure email change"가 켜져 있으면 이전 주소에도 간다)
 - [ ] dev 서버 준비: Cloudflare Public Hostname + Nginx + 별도 컨테이너 + 별도 Supabase
 
 ## 문구와 자산

@@ -28,7 +28,7 @@ function oneLine(text: string): string {
 
 /*
  * 폼에서 받은 값을 다듬고 검사한다. 문제가 있으면 사용자에게 보여 줄 메시지를 돌려준다.
- * 한 줄 설명은 비워 둘 수 있다.
+ * 작품과 한 줄 설명은 비워 둘 수 있다 (작품이 없으면 work 는 빈 문자열).
  */
 export function parseCharacterInput(raw: {
   slug: unknown;
@@ -43,7 +43,6 @@ export function parseCharacterInput(raw: {
 
   if (name === "") return { ok: false, message: "캐릭터 이름을 적어 주세요." };
   if (name.length > MAX_NAME_LENGTH) return { ok: false, message: `이름은 ${MAX_NAME_LENGTH}자까지 쓸 수 있어요.` };
-  if (work === "") return { ok: false, message: "작품 이름을 적어 주세요." };
   if (work.length > MAX_WORK_LENGTH) return { ok: false, message: `작품 이름은 ${MAX_WORK_LENGTH}자까지 쓸 수 있어요.` };
   if (summary.length > MAX_SUMMARY_LENGTH) {
     return { ok: false, message: `한 줄 설명은 ${MAX_SUMMARY_LENGTH}자까지 쓸 수 있어요.` };
@@ -58,10 +57,12 @@ export function parseCharacterInput(raw: {
 
 /*
  * 새 캐릭터의 첫 원문. 메타 블록에 제목과 작품을 넣어 두면 문서 화면과 목록이 같은 값을 쓴다.
- * 이름과 작품은 메타 블록의 값 길이 제한(200자) 안이다.
+ * 작품이 없으면 작품 줄을 쓰지 않는다. 이름과 작품은 메타 블록의 값 길이 제한(200자) 안이다.
  */
 export function buildCharacterMarkdown({ name, work, summary }: Pick<CharacterInput, "name" | "work" | "summary">): string {
-  const lines = ["---", "분류: 등장인물", "정보:", `  제목: ${name}`, `  작품: ${work}`, "---", "", "## 개요"];
+  const lines = ["---", "분류: 등장인물", "정보:", `  제목: ${name}`];
+  if (work !== "") lines.push(`  작품: ${work}`);
+  lines.push("---", "", "## 개요");
   lines.push(summary === "" ? "아직 쓰지 않았어요." : summary);
   return `${lines.join("\n")}\n`;
 }

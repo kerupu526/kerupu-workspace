@@ -1,0 +1,24 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+/* 위의 네 칸은 두 줄 두 칸. 좁아지면 한 칸씩 쌓인다 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-24);
+}
+
+.message {
+  margin: 0;
+  min-height: 1lh;
+  font-size: var(--text-caption-size);
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}

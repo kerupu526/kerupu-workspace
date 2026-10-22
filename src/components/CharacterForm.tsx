@@ -26,9 +26,9 @@ export default function CharacterForm() {
       <h2 className={styles.title} id="character-new-title">
         새 캐릭터 추가
       </h2>
-      <form className={styles.form} action={action}>
+      <form className={styles.form} action={action} noValidate>
         <Field id="name" label="이름" required maxLength={MAX_NAME_LENGTH} defaultValue={values?.name} />
-        <Field id="work" label="작품" required maxLength={MAX_WORK_LENGTH} defaultValue={values?.work} />
+        <Field id="work" label="작품 (없으면 비워 둬요)" maxLength={MAX_WORK_LENGTH} defaultValue={values?.work} />
         <Field
           id="summary"
           label="한 줄 설명 (목록에 보여요)"

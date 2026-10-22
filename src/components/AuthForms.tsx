@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import Card from "./Card";
 import { Button } from "./Button";
 import Field from "./Field";
@@ -23,9 +24,9 @@ export default function AuthForms() {
         <h2 className={styles.title} id="login-title">
           로그인
         </h2>
-        <form className={styles.form} action={loginAction}>
-          <Field id="login-email" label="이메일" type="email" autoComplete="email" />
-          <Field id="login-password" label="비밀번호" type="password" autoComplete="current-password" />
+        <form className={styles.form} action={loginAction} noValidate>
+          <Field id="login-email" label="이메일" type="email" autoComplete="email" required />
+          <Field id="login-password" label="비밀번호" type="password" autoComplete="current-password" required />
           <p className={styles.message} role="status">
             {loginState.message ?? ""}
           </p>
@@ -33,21 +34,25 @@ export default function AuthForms() {
             {loginPending ? "확인하는 중" : "로그인"}
           </Button>
         </form>
+        <p className={styles.forgot}>
+          <Link href="/login/reset">비밀번호를 잊으셨나요?</Link>
+        </p>
       </Card>
 
       <Card as="section" className={styles.card} aria-labelledby="signup-title">
         <h2 className={styles.title} id="signup-title">
           회원가입
         </h2>
-        <form className={styles.form} action={signupAction}>
-          <Field id="signup-nickname" label="닉네임" autoComplete="nickname" />
-          <Field id="signup-email" label="이메일" type="email" autoComplete="email" />
-          <Field id="signup-password" label="비밀번호 (8자 이상)" type="password" autoComplete="new-password" />
+        <form className={styles.form} action={signupAction} noValidate>
+          <Field id="signup-nickname" label="닉네임" autoComplete="nickname" required />
+          <Field id="signup-email" label="이메일" type="email" autoComplete="email" required />
+          <Field id="signup-password" label="비밀번호 (8자 이상)" type="password" autoComplete="new-password" required />
           <Field
             id="signup-password-confirm"
             label="비밀번호 확인"
             type="password"
             autoComplete="new-password"
+            required
           />
           <p className={styles.message} role="status">
             {signupState.message ?? ""}

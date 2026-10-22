@@ -15,6 +15,7 @@ interface FieldProps {
   name?: string;
   /** 처음 채워 둘 값 */
   defaultValue?: string;
+  /** 필수 항목: 라벨 옆에 빨간 * 를 보이고, 보조기기에는 required 로 알린다 */
   required?: boolean;
   maxLength?: number;
 }
@@ -38,6 +39,12 @@ export default function Field({
     <div className={multiline ? `${styles.field} ${styles.grow}` : styles.field}>
       <label className={hideLabel ? "visually-hidden" : styles.label} htmlFor={id}>
         {label}
+        {required && !hideLabel ? (
+          <span className={styles.required} aria-hidden="true">
+            {" "}
+            *
+          </span>
+        ) : null}
       </label>
       {multiline ? (
         <textarea

@@ -40,7 +40,7 @@ export async function createCharacter(_prev: CreateCharacterState, formData: For
   const { error } = await supabase.rpc("create_character", {
     p_slug: input.slug,
     p_name: input.name,
-    p_work: input.work,
+    p_work: input.work === "" ? null : input.work,
     p_summary: input.summary === "" ? null : input.summary,
     p_markdown: buildCharacterMarkdown(input),
   });

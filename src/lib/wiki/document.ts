@@ -8,10 +8,11 @@ import type { ParsedWiki } from "./parse";
 export function buildDocumentProps(parsed: ParsedWiki, slug: string): WikiDocumentProps {
   const { sections, lead, footnotes, meta } = parsed;
   const title = meta.infobox.title ?? "[캐릭터 이름]";
-  const work = meta.infobox.rows.find((row) => row.label === "작품")?.value ?? "[작품]";
+  const work = meta.infobox.rows.find((row) => row.label === "작품")?.value;
 
   return {
-    breadcrumb: [{ label: "캐릭터 사전", href: "/dictionary" }, { label: work }, { label: title }],
+    // 작품은 선택 항목이라 없으면 그 칸을 빼고 "캐릭터 사전 > 이름" 으로 보여 준다
+    breadcrumb: [{ label: "캐릭터 사전", href: "/dictionary" }, ...(work ? [{ label: work }] : []), { label: title }],
     href: `/dictionary/${encodeURIComponent(slug)}`,
     title,
     modified: "[날짜]",

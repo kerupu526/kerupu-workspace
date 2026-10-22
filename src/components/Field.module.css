@@ -15,6 +15,11 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 필수 항목 표시(*). 빨강은 오류 색 토큰을 쓴다 */
+.required {
+  color: var(--state-error);
+}
+
 .input,
 .textarea {
   width: 100%;

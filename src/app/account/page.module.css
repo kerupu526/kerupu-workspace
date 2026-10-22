@@ -157,3 +157,9 @@
 .note {
   font-size: var(--text-caption-size);
 }
+
+/* 비밀번호를 바꾼 뒤 보이는 안내 */
+.notice {
+  margin: 0;
+  font-size: var(--text-body-size);
+}

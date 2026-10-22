@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Button, ButtonLink } from "@/components/Button";
 import Card from "@/components/Card";
 import Chip from "@/components/Chip";
-import NicknameForm from "@/components/NicknameForm";
+import AccountSettingsForm from "@/components/AccountSettingsForm";
 import PageFrame from "@/components/PageFrame";
 import { createClient } from "@/lib/supabase/server";
 import { DASHBOARD_CHARACTER_LIMIT, formatKst, getAccountDashboard } from "@/lib/wiki/dashboard";
@@ -15,10 +15,15 @@ import styles from "./page.module.css";
 export const metadata: Metadata = { title: "내 계정", robots: { index: false, follow: false } };
 
 /*
- * 내 계정 대시보드. 왼쪽은 계정 카드(닉네임, 이메일, 로그아웃), 오른쪽은 내 활동이다.
+ * 내 계정 대시보드. 왼쪽은 계정 카드(닉네임, 이메일, 로그아웃), 오른쪽은 내 활동과 계정 설정이다.
  * 로그인하지 않았으면 로그인 화면으로 보낸다.
  */
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ notice?: string }>;
+}) {
+  const { notice } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   const user = data.user;
@@ -39,7 +44,6 @@ export default async function AccountPage() {
         </div>
         <p className={styles.meta}>{user.email}</p>
         <p className={styles.meta}>가입한 날 {formatKst(user.created_at)}</p>
-        <NicknameForm nickname={nickname} />
         <form action={signOut}>
           <Button type="submit" variant="secondary" className={styles.logout}>
             로그아웃
@@ -49,6 +53,12 @@ export default async function AccountPage() {
 
       <div className={styles.activity}>
         <h2 className="visually-hidden">내 활동</h2>
+
+        {notice === "password" ? (
+          <p className={styles.notice} role="status">
+            새 비밀번호로 바꿨어요. 다른 기기의 로그인은 끊겼어요.
+          </p>
+        ) : null}
 
         <dl className={styles.stats}>
           <Card className={styles.stat}>
@@ -60,6 +70,13 @@ export default async function AccountPage() {
             <dd>{dashboard.revisionCount}</dd>
           </Card>
         </dl>
+
+        <Card as="section" className={styles.panel} aria-labelledby="settings-title">
+          <h3 className={styles.panelTitle} id="settings-title">
+            계정 설정
+          </h3>
+          <AccountSettingsForm nickname={nickname} email={user.email ?? ""} />
+        </Card>
 
         <Card as="section" className={styles.panel} aria-labelledby="my-characters-title">
           <div className={styles.panelHeader}>
