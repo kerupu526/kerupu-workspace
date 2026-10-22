@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AuthForms from "@/components/AuthForms";
+import NicknameForm from "@/components/NicknameForm";
 import Card from "@/components/Card";
 import { Button } from "@/components/Button";
 import PageFrame from "@/components/PageFrame";
@@ -38,6 +39,7 @@ export default async function LoginPage({
             </h2>
             <p className={styles.accountName}>{nickname ?? "사용자"}님, 환영합니다.</p>
             <p className={styles.accountEmail}>{user.email}</p>
+            <NicknameForm nickname={nickname} />
             <form action={signOut}>
               <Button type="submit" variant="secondary" className={styles.logout}>
                 로그아웃

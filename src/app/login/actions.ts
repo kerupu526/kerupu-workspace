@@ -2,7 +2,9 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { parseNickname } from "@/lib/nickname";
 
 /*
  * 이 사이트의 주소. 확인 메일 링크가 여기로 돌아오므로 고정 설정(SITE_URL)을 우선한다.
@@ -41,13 +43,15 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
 }
 
 export async function signUp(_prev: AuthState, formData: FormData): Promise<AuthState> {
-  const nickname = String(formData.get("signup-nickname") ?? "").trim();
+  const nicknameText = String(formData.get("signup-nickname") ?? "").trim();
   const email = String(formData.get("signup-email") ?? "").trim();
   const password = String(formData.get("signup-password") ?? "");
   const confirm = String(formData.get("signup-password-confirm") ?? "");
 
-  if (!nickname || !email || !password) return { message: "모든 칸을 입력해 주세요." };
-  if (nickname.length < 2 || nickname.length > 20) return { message: "닉네임은 2~20자로 써 주세요." };
+  if (!nicknameText || !email || !password) return { message: "모든 칸을 입력해 주세요." };
+  const nicknameInput = parseNickname(nicknameText);
+  if (!nicknameInput.ok) return { message: nicknameInput.message };
+  const nickname = nicknameInput.value;
   if (!EMAIL.test(email)) return { message: "이메일 형식을 확인해 주세요." };
   if (password.length < 8) return { message: "비밀번호는 8자 이상으로 써 주세요." };
   if (password !== confirm) return { message: "비밀번호 확인이 맞지 않아요." };
@@ -71,6 +75,23 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   }
 
   redirect("/login");
+}
+
+/* 내 계정에서 닉네임 바꾸기. 처음 정하는 것도 같은 동작이다 (대시보드에서 만든 계정은 닉네임이 없다). */
+export async function updateNickname(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const nickname = parseNickname(formData.get("nickname"));
+  if (!nickname.ok) return { message: nickname.message };
+
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { message: "로그인이 끝났어요. 다시 로그인해 주세요." };
+
+  // 닉네임은 화면 표시용이다. 권한 판단에는 쓰지 않는다 (user_metadata 는 사용자가 고칠 수 있다).
+  const { error } = await supabase.auth.updateUser({ data: { nickname: nickname.value } });
+  if (error) return { message: "닉네임을 바꾸지 못했어요. 잠시 뒤 다시 해 주세요." };
+
+  revalidatePath("/login");
+  return { message: "닉네임을 저장했어요." };
 }
 
 export async function signOut() {
