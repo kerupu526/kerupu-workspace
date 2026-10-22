@@ -6,10 +6,6 @@
   align-items: start;
 }
 
-.tabs {
-  grid-column: 1 / -1;
-}
-
 /* 왼쪽 찾아보기 카드: 높이는 내용만큼 */
 .filters {
   --card-h: auto;
