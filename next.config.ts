@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
   // 막히면 화면은 보이는데 버튼·모달이 동작하지 않는다.
   allowedDevOrigins: ["100.115.172.37"],
 
+  // 이미지 업로드(서버 동작)가 8MB 까지 받도록 한다 (기본 1MB). 요청에는 폼 값이 조금 더 붙어서 여유를 둔다.
+  // 앞단의 Nginx 도 같은 크기를 받아야 한다 (deploy/nginx 의 client_max_body_size).
+  experimental: {
+    serverActions: { bodySizeLimit: "9mb" },
+  },
+
   // 글꼴 파일은 1년 동안 다시 확인하지 않고 캐시한다 (Next 기본은 매번 다시 확인).
   // 파일 이름이 같은 채로 내용을 바꾸면 방문자 캐시에 옛 글꼴이 남으므로, 바꿀 때는 파일 이름도 바꾼다.
   async headers() {

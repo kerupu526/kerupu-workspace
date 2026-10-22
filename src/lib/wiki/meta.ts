@@ -9,7 +9,7 @@
  *   정보:
  *     제목: 캐릭터 1
  *     작품: 작품명
- *   이미지: /uploads/character-1.png
+ *   이미지: <이미지 업로드 화면에서 받은 주소>  (예전 방식의 /uploads/character-1.png 도 된다)
  *   ---
  *   - 문서의 맨 앞(빈 줄만 앞설 수 있다)에서 `---` 로 감싼 블록만 메타 블록이다.
  *     감싼 안쪽이 `이름: 값` 줄(과 들여쓴 줄)로만 이루어지지 않았으면 메타 블록으로 보지 않고
@@ -213,7 +213,7 @@ export function extractMeta(
       } else if (key === "이미지") {
         section = "이미지";
         if (value !== "" && isSafeImage(value)) meta.infobox.image = value;
-        else warn(`메타 블록: 이미지 주소는 /uploads/ 로 시작하는 올린 파일만 쓸 수 있습니다: "${value.slice(0, 40)}"`);
+        else warn(`메타 블록: 이미지 주소는 이미지 업로드 화면에서 받은 주소(또는 /uploads/ 파일)만 쓸 수 있습니다: "${value.slice(0, 40)}"`);
       } else {
         warn(`메타 블록: 알 수 없는 이름 "${key.slice(0, 20)}"은(는) 버렸습니다.`);
       }

@@ -212,7 +212,7 @@ docker compose up -d --build
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | 공개 (브라우저로 나감) | **빌드할 때** 코드에 박힘 + 실행 |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 공개 (브라우저로 나감) | **빌드할 때** 코드에 박힘 + 실행 |
-| `SUPABASE_SECRET_KEY` | **비밀** (RLS 우회) | 실행할 때만. 서버 코드에서만 가져온다 |
+| `SUPABASE_SECRET_KEY` | **비밀** (RLS 우회) | 실행할 때만. 서버 코드에서만 가져온다. **이미지 업로드(`/images/new`)가 쓴다** — 비어 있으면 업로드가 실패한다 |
 | `SUPABASE_DB_PASSWORD` | **비밀** | 마이그레이션, 백업 같은 관리 작업에만. 웹 앱은 쓰지 않는다. **`.env`가 아니라 `~/.config/kerupu/admin.env`에 둔다** (아래) |
 
 `.env`는 컨테이너 환경에 통째로 들어가므로, 웹 앱이 쓰지 않는 관리용 비밀(DB 비밀번호)은 컨테이너가 읽지 않는 별도 파일에 둔다.
@@ -235,6 +235,18 @@ docker compose up -d --build
 
 더 안전하게 하려면(나중에): Docker secrets나 서버의 비밀값 관리 도구로 옮길 수 있다. 지금 규모에서는 권한을 `600`으로 한 `.env`로 충분하다.
 
+## 이미지 업로드 (Supabase Storage)
+
+캐릭터 사전의 "새 이미지 업로드"(`/images/new`)는 이미지를 Supabase Storage의 `images` 버킷에 올린다. 서버 디스크는 쓰지 않아서 컨테이너는 계속 읽기 전용이다. 켜려면 세 가지가 필요하다.
+
+1. **버킷 만들기:** `supabase/migrations/20261023090000_images_bucket.sql`을 DB에 적용한다(dev 먼저, 운영은 확인한 뒤). 확인은 `supabase/tests/images_bucket.sql`.
+2. **secret 키:** 서버 `.env`에 `SUPABASE_SECRET_KEY`를 채운다(Supabase 대시보드 > Project Settings > API Keys의 Secret key). 올리기는 서버가 파일을 검사한 뒤 이 키로만 한다(일반 사용자에게는 버킷 올리기 권한이 없다). 값을 바꾼 뒤에는 `docker compose up -d`로 컨테이너를 다시 만든다.
+3. **Nginx 업로드 크기:** `deploy/nginx/kerupu.tech.conf`, `dev.kerupu.tech.conf`에 `client_max_body_size 10m;`가 들어 있다. 서버에서 설정을 다시 복사하고 `sudo nginx -t && sudo systemctl reload nginx`를 해야 반영된다. 이 줄이 없으면(Nginx 기본 1MB) 큰 이미지에서 413 오류가 난다.
+
+- 파일은 8MB 이하의 PNG, JPEG, WebP, GIF, SVG만 올라가고, 형식은 서버가 파일 내용으로 확인한다. SVG는 스크립트나 바깥 주소 참조가 있으면 거부한다.
+- 올린 파일은 사용자가 지울 수 없다. 잘못 올린 파일은 Supabase 대시보드 > Storage > images에서 지운다.
+- Cloudflare 무료 플랜의 업로드 한도(100MB)는 8MB보다 커서 따로 손볼 것이 없다.
+
 ## 서버의 저장 위치 (`/data/kerupu`)
 
 집 서버는 루트(`/`)가 작고(28GB), 별도 파티션 `/data`(78GB)가 넓다. Docker의 이미지와 빌드 캐시는 기본 위치(`/var/lib/docker`, 루트 쪽)에 쌓이므로 **루트 여유를 가끔 확인한다** (`df -h /`).
@@ -244,7 +256,7 @@ docker compose up -d --build
 | 폴더 | 용도 | 권한 |
 |---|---|---|
 | `/data/kerupu/backups` | DB 백업(`pg_dump`, `supabase db dump`) 같은 복구용 파일 | 본인만 (750) |
-| `/data/kerupu/uploads` | 이미지 업로드를 서버에 저장하기로 하면 쓸 자리 (아직 쓰지 않음. Supabase Storage를 쓰면 필요 없다) | 755 |
+| `/data/kerupu/uploads` | 쓰지 않는다 (이미지는 Supabase Storage에 올린다. 위 "이미지 업로드" 참고) | 755 |
 
 - 백업에는 비밀값이 섞일 수 있으니 `backups`는 본인만 읽게 두고, `.env` 파일 자체를 복사해 두지 않는다 (비밀값을 여러 곳에 퍼뜨리지 않는다).
 - 컨테이너는 지금 읽기 전용이다. 파일을 저장해야 하면 `docker-compose.yml`에 이 폴더를 볼륨으로 붙인다 (컨테이너 사용자가 쓸 수 있는 권한도 함께 맞춘다).

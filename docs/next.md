@@ -12,6 +12,7 @@
 - [ ] Supabase(dev, 운영 각각) Authentication > URL Configuration > Redirect URLs 에 `https://<주소>/auth/recovery` 추가 (비밀번호 재설정 링크용. 개발용은 `http://localhost:3000/auth/recovery`)
 - [ ] 비밀번호 재설정: `/login` 의 "비밀번호를 잊으셨나요?" → 메일 → 새 비밀번호 → `/account` 까지 실제 메일로 확인
 - [ ] 내 계정의 "계정 설정 변경": 닉네임, 비밀번호 변경, 이메일 변경(새 주소로 확인 메일이 가고, Supabase 의 "Secure email change"가 켜져 있으면 이전 주소에도 간다)
+- [ ] 이미지 업로드: `20261023090000_images_bucket.sql` 적용(dev 먼저) → 서버 `.env`에 `SUPABASE_SECRET_KEY` → Nginx 설정 복사 후 reload(`client_max_body_size`) → `/images/new`에서 PNG, SVG 올려 보고 문서에 붙여 넣기. 목록 카드 대표 이미지는 아직 연결 안 됨
 - [ ] dev 서버 준비: Cloudflare Public Hostname + Nginx + 별도 컨테이너 + 별도 Supabase
 
 ## 문구와 자산

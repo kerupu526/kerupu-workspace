@@ -29,7 +29,7 @@ const LINE_START: Completion[] = [
   }),
   snippetCompletion("## + ${접힌 문단 제목}", { label: "## +", detail: "처음부터 접힌 문단", type: "keyword" }),
   snippetCompletion("| ${항목} | ${내용} |\n|:---|:---|\n| ${} | ${} |", { label: "|", detail: "표 (칸 합치기는 < 와 ^)", type: "keyword" }),
-  snippetCompletion("![${설명}](/uploads/${파일.png})", { label: "![", detail: "이미지", type: "keyword" }),
+  snippetCompletion("![${설명}](${이미지 주소})", { label: "![", detail: "이미지 (주소는 이미지 업로드 화면에서)", type: "keyword" }),
   snippetCompletion("> ${인용할 내용}", { label: ">", detail: "인용문", type: "keyword" }),
   snippetCompletion("- ${항목}", { label: "-", detail: "목록", type: "keyword" }),
   snippetCompletion("1. ${항목}", { label: "1.", detail: "번호 목록", type: "keyword" }),
@@ -38,14 +38,14 @@ const LINE_START: Completion[] = [
 ];
 
 const META_BLOCK = snippetCompletion(
-  "---\n분류: ${분류, 분류}\n정보:\n  제목: ${이름}\n  작품: ${작품명}\n이미지: /uploads/${파일.png}\n---\n",
+  "---\n분류: ${분류, 분류}\n정보:\n  제목: ${이름}\n  작품: ${작품명}\n이미지: ${이미지 주소}\n---\n",
   { label: "---", displayLabel: "--- (메타 블록)", detail: "문서 맨 위에만", type: "keyword", boost: 1 },
 );
 
 const META_KEYS: Completion[] = [
   { label: "분류", detail: "쉼표로 나눔", apply: "분류: ", type: "property" },
   { label: "정보", detail: "정보 상자", apply: "정보:\n  ", type: "property" },
-  { label: "이미지", detail: "/uploads/ 파일", apply: "이미지: /uploads/", type: "property" },
+  { label: "이미지", detail: "이미지 업로드 화면의 주소", apply: "이미지: ", type: "property" },
 ];
 
 const INFO_KEYS: Completion[] = [

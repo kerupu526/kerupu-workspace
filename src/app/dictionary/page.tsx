@@ -109,9 +109,14 @@ export default async function DictionaryPage({ searchParams }: { searchParams: P
           <p className={styles.count} role="status">
             {filtered ? `조건에 맞는 캐릭터 ${items.length}명` : `캐릭터 ${items.length}명`}
           </p>
-          <ButtonLink href="/dictionary/new" size="compact">
-            새 캐릭터 추가
-          </ButtonLink>
+          <div className={styles.toolbarActions}>
+            <ButtonLink href="/images/new" variant="secondary" size="compact">
+              새 이미지 업로드
+            </ButtonLink>
+            <ButtonLink href="/dictionary/new" size="compact">
+              새 캐릭터 추가
+            </ButtonLink>
+          </div>
         </div>
         <h2 className="visually-hidden">캐릭터 목록</h2>
         {items.length === 0 ? (

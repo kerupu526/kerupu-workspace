@@ -69,6 +69,13 @@
   margin-bottom: var(--space-24);
 }
 
+.toolbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-12);
+}
+
 .count {
   margin: 0;
   font-size: var(--text-label-size);
